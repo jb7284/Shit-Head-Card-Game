@@ -49,15 +49,7 @@ struct ContentView: View {
     // MARK: - Table Background
 
     private var tableBackground: some View {
-        ZStack {
-            Color(red: 0.08, green: 0.32, blue: 0.16)
-            RadialGradient(
-                colors: [Color(red: 0.12, green: 0.42, blue: 0.22), Color(red: 0.06, green: 0.24, blue: 0.12)],
-                center: .center,
-                startRadius: 50,
-                endRadius: 500
-            )
-        }
+        FeltTableBackground()
     }
 
     // MARK: - Start Screen
@@ -355,19 +347,10 @@ struct ContentView: View {
             ZStack {
                 // Pile area
                 VStack(spacing: 2) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                            .frame(width: 58, height: 80)
-
-                        if let topCard = engine.state.topCard {
-                            CardView(card: topCard, faceUp: true)
-                                .transition(.asymmetric(
-                                    insertion: .scale(scale: 0.5).combined(with: .opacity),
-                                    removal: .scale(scale: 1.2).combined(with: .opacity)
-                                ))
-                        }
-                    }
+                    PileLandingZone(
+                        topCard: engine.state.topCard,
+                        pileCount: engine.state.pile.count
+                    )
 
                     Text("Pile: \(engine.state.pile.count)")
                         .font(.system(size: 10))
