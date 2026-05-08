@@ -1,20 +1,9 @@
 # $H!T Head
 
-A SwiftUI card game for macOS. Play *Shithead* against 1-5 AI opponents — the last player holding cards is crowned the Sh\*t Head.
-
-Single-player only. No accounts, no networking, no in-app purchases, no external dependencies.
+A SwiftUI card game for macOS. Play *Shithead* — the last player holding cards is crowned the Sh\*t Head.
 
 ![Swift](https://img.shields.io/badge/Swift-5.9+-orange) ![Platform](https://img.shields.io/badge/Platform-macOS%2014+-blue)
 
-## Features
-
-- **1-5 AI opponents** with custom portrait avatars and distinct personalities
-- **3 difficulty levels** — Easy (with card highlighting hints), Medium, and Expert (strategic play with 7s, pile pressure, four-of-a-kind setups)
-- **Drag-and-drop or tap** to play cards from a fan-spread hand
-- **Responsive UI** that scales cleanly with window resizing — no blur, always crisp
-- **Swap phase** at the start of each game to optimize your face-up cards
-- **Visual effects** — burn animations, wild card flashes, amber pile glow
-- **Gold-themed card backs** and draw piles with depth shadows
 
 ## How to Play
 
