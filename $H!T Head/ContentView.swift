@@ -557,6 +557,10 @@ struct ContentView: View {
                         y: geo.size.height / 2
                     )
                     .zIndex(isSelected ? 100 : Double(index))
+                    .onTapGesture(count: 2) {
+                        guard isMyTurn else { return }
+                        handleCardDoubleTap(card)
+                    }
                     .onTapGesture {
                         guard isMyTurn else { return }
                         handleCardTap(card)
@@ -619,6 +623,17 @@ struct ContentView: View {
                 selectedCards = [card]
             }
         }
+    }
+
+    private func handleCardDoubleTap(_ card: Card) {
+        guard engine.canPlay(card) else { return }
+
+        if selectedCards.isEmpty || selectedCards[0].rank != card.rank {
+            selectedCards = [card]
+        } else if !selectedCards.contains(card) {
+            selectedCards.append(card)
+        }
+        playSelectedCards()
     }
 
     private var selectionControls: some View {
