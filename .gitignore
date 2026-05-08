@@ -1,0 +1,5 @@
+.swiftlint_cache/
+DerivedData/
+.build/
+*.xcuserstate
+xcuserdata/
