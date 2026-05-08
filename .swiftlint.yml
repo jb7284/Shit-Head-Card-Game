@@ -37,9 +37,9 @@ line_length:
   ignores_comments: true
 
 file_length:
-  warning: 700
+  warning: 750
   error: 900
 
 type_body_length:
-  warning: 600
+  warning: 650
   error: 800

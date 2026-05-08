@@ -355,6 +355,14 @@ struct ContentView: View {
                     Text("Pile: \(engine.state.pile.count)")
                         .font(.system(size: 10))
                         .foregroundStyle(.white.opacity(0.4))
+
+                    Text(ruleStatusText)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(ruleStatusColor))
+                        .overlay(Capsule().stroke(.white.opacity(0.12), lineWidth: 1))
                 }
 
                 // Burn effect
@@ -491,6 +499,11 @@ struct ContentView: View {
             // Fan hand
             fanHand(human: human, isMyTurn: isMyTurn)
                 .padding(.horizontal, 4)
+
+            if isMyTurn && !selectedCards.isEmpty {
+                selectionControls
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         .padding(.vertical, 2)
         .background(
@@ -591,11 +604,9 @@ struct ContentView: View {
         guard engine.canPlay(card) else { return }
 
         if selectedCards.contains(card) {
-            withAnimation(springAnim) {
-                engine.playCards(selectedCards)
-                selectedCards.removeAll()
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                selectedCards.removeAll { $0 == card }
             }
-            triggerAI()
         } else if selectedCards.isEmpty {
             withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
                 selectedCards.append(card)
@@ -609,6 +620,46 @@ struct ContentView: View {
                 selectedCards = [card]
             }
         }
+    }
+
+    private var selectionControls: some View {
+        HStack(spacing: 10) {
+            Button("Clear") {
+                withAnimation(springAnim) { selectedCards.removeAll() }
+            }
+            .font(.caption.bold())
+            .foregroundStyle(.white.opacity(0.72))
+
+            Button(action: playSelectedCards) {
+                Text("Play \(selectedCards.count) \(selectedCards[0].rank.label)")
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Color.green.opacity(0.75)))
+            }
+        }
+        .padding(.bottom, 4)
+    }
+
+    private func playSelectedCards() {
+        withAnimation(springAnim) {
+            engine.playCards(selectedCards)
+            selectedCards.removeAll()
+        }
+        triggerAI()
+    }
+
+    private var ruleStatusText: String {
+        if engine.mustPlayUnderSeven { return "Play 7 or lower" }
+        guard let topCard = engine.state.effectiveTopCard else { return "Any card" }
+        return "Play \(topCard.rank.label) or higher"
+    }
+
+    private var ruleStatusColor: Color {
+        if engine.mustPlayUnderSeven { return Color.orange.opacity(0.72) }
+        if engine.state.pile.isEmpty { return Color.green.opacity(0.42) }
+        return Color.black.opacity(0.24)
     }
 
     private func triggerAI() {
