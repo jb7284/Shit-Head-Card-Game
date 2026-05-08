@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5411EC1C2FAE59040000102F /* RulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC1B2FAE59040000102F /* RulesView.swift */; };
+		5411EC1E2FAE59040000102F /* GameOverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC1D2FAE59040000102F /* GameOverView.swift */; };
+		5411EC202FAE59050000102F /* OpponentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC1F2FAE59050000102F /* OpponentViews.swift */; };
+		5411EC222FAE5AAC0000102F /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC212FAE5AAC0000102F /* SoundManager.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		54C4DDAF2FAD9FCB00A7415B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +31,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		5411EC1B2FAE59040000102F /* RulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RulesView.swift; sourceTree = "<group>"; };
+		5411EC1D2FAE59040000102F /* GameOverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameOverView.swift; sourceTree = "<group>"; };
+		5411EC1F2FAE59050000102F /* OpponentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpponentViews.swift; sourceTree = "<group>"; };
+		5411EC212FAE5AAC0000102F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		54C4DDA12FAD9FCA00A7415B /* $H!T Head.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "$H!T Head.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		54C4DDAE2FAD9FCB00A7415B /* $H!T HeadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "$H!T HeadTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		54C4DDB82FAD9FCB00A7415B /* $H!T HeadUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "$H!T HeadUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -79,6 +90,10 @@
 				54C4DDB12FAD9FCB00A7415B /* $H!T HeadTests */,
 				54C4DDBB2FAD9FCB00A7415B /* $H!T HeadUITests */,
 				54C4DDA22FAD9FCA00A7415B /* Products */,
+				5411EC1B2FAE59040000102F /* RulesView.swift */,
+				5411EC1D2FAE59040000102F /* GameOverView.swift */,
+				5411EC1F2FAE59050000102F /* OpponentViews.swift */,
+				5411EC212FAE5AAC0000102F /* SoundManager.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -236,6 +251,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5411EC1E2FAE59040000102F /* GameOverView.swift in Sources */,
+				5411EC1C2FAE59040000102F /* RulesView.swift in Sources */,
+				5411EC202FAE59050000102F /* OpponentViews.swift in Sources */,
+				5411EC222FAE5AAC0000102F /* SoundManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

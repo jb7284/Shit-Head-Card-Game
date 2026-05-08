@@ -13,6 +13,15 @@ enum Suit: String, CaseIterable, Codable {
         case .spades: return "♠️"
         }
     }
+
+    var character: String {
+        switch self {
+        case .hearts: return "\u{2665}"
+        case .diamonds: return "\u{2666}"
+        case .clubs: return "\u{2663}"
+        case .spades: return "\u{2660}"
+        }
+    }
 }
 
 enum Rank: Int, CaseIterable, Codable, Comparable {
@@ -60,7 +69,7 @@ struct Card: Identifiable, Equatable, Codable {
         lhs.uid == rhs.uid
     }
 
-    var isReset: Bool { rank == .two }
+    var isWild: Bool { rank == .two }
     var isBurn: Bool { rank == .ten }
     var isSeven: Bool { rank == .seven }
     var isSkip: Bool { rank == .eight }
@@ -104,6 +113,7 @@ struct Deck {
 struct Player: Identifiable {
     let id: String
     let name: String
+    let avatar: String
     let isAI: Bool
 
     var hand: [Card] = []
@@ -138,8 +148,21 @@ enum CardZone {
 
 enum GamePhase {
     case dealing
+    case swapping
     case playing
     case finished
+}
+
+enum Difficulty: CaseIterable {
+    case easy, medium, expert
+
+    var label: String {
+        switch self {
+        case .easy: return "Easy"
+        case .medium: return "Medium"
+        case .expert: return "Expert"
+        }
+    }
 }
 
 @Observable
@@ -151,6 +174,7 @@ class GameState {
     var playDirection: Int = 1
     var phase: GamePhase = .dealing
     var turnNumber: Int = 0
+    var finishOrder: [String] = []
 
     var currentPlayer: Player {
         players[currentPlayerIndex]

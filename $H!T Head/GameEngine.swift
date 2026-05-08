@@ -1,20 +1,31 @@
 import Foundation
 
-enum PileClearReason {
-    case none, burn, pickup, failedFlip
+enum GameEvent: Equatable {
+    case none
+    case normal
+    case wild           // 2 played — wild card, pile not cleared
+    case sevenPlayed    // 7 played — under-7 constraint set for next play
+    case skip           // 8 played
+    case reverse        // 9 played
+    case burn           // 10 played or four-of-a-kind on top
+    case pickup         // current player picked up the pile
+    case failedFlip     // face-down flip was illegal; player took the pile
 }
 
+@MainActor
 @Observable
 class GameEngine {
     var state = GameState()
     var message: String = ""
     var mustPlayUnderSeven: Bool = false
-    var lastPileClearReason: PileClearReason = .none
+    var lastEvent: GameEvent = .none
+    var difficulty: Difficulty = .medium
 
     // MARK: - Setup
 
-    func startNewGame(playerCount: Int = 2) {
+    func startNewGame(playerCount: Int = 2, difficulty: Difficulty = .medium) {
         state = GameState()
+        self.difficulty = difficulty
         let clamped = min(max(playerCount, 2), 6)
 
         let deckCount: Int
@@ -27,10 +38,17 @@ class GameEngine {
         }
         state.deck = Deck.standard(deckCount: deckCount)
 
-        let aiNames = ["CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"]
-        var players: [Player] = [Player(id: "human", name: "You", isAI: false)]
+        let aiCharacters: [(name: String, avatar: String)] = [
+            ("Marco", "avatar_marco"),
+            ("Sofia", "avatar_sofia"),
+            ("Dante", "avatar_dante"),
+            ("Ava", "avatar_ava"),
+            ("Jake", "avatar_jake"),
+        ]
+        var players: [Player] = [Player(id: "human", name: "You", avatar: "", isAI: false)]
         for i in 0..<(clamped - 1) {
-            players.append(Player(id: "ai\(i)", name: aiNames[i], isAI: true))
+            let char = aiCharacters[i]
+            players.append(Player(id: "ai\(i)", name: char.name, avatar: char.avatar, isAI: true))
         }
         state.players = players
 
@@ -53,15 +71,126 @@ class GameEngine {
             refillHand(playerIndex: i)
         }
 
-        state.phase = .playing
+        state.phase = .swapping
         state.currentPlayerIndex = 0
-        message = "Your turn"
+        message = "Swap cards between your hand and face-up cards"
+    }
+
+    // MARK: - Swap Phase
+
+    func swapCards(handIndex: Int, faceUpIndex: Int) {
+        guard state.phase == .swapping else { return }
+        guard let humanIndex = state.players.firstIndex(where: { !$0.isAI }) else { return }
+        guard handIndex < state.players[humanIndex].hand.count else { return }
+        guard faceUpIndex < state.players[humanIndex].faceUp.count else { return }
+
+        let temp = state.players[humanIndex].hand[handIndex]
+        state.players[humanIndex].hand[handIndex] = state.players[humanIndex].faceUp[faceUpIndex]
+        state.players[humanIndex].faceUp[faceUpIndex] = temp
+    }
+
+    func confirmSwap() {
+        guard state.phase == .swapping else { return }
+        performAISwaps()
+        let starter = determineStartingPlayer()
+        state.phase = .playing
+        state.currentPlayerIndex = starter
+        state.turnNumber = 0
+        if state.players[starter].isAI {
+            message = "\(state.players[starter].name) has the lowest card — goes first!"
+        } else {
+            message = "You have the lowest card — your turn!"
+        }
+    }
+
+    private func determineStartingPlayer() -> Int {
+        let suitOrder: [Suit] = [.clubs, .diamonds, .spades, .hearts]
+        for rank in Rank.allCases where rank != .two {
+            for suit in suitOrder {
+                for (index, player) in state.players.enumerated() {
+                    if player.hand.contains(where: { $0.rank == rank && $0.suit == suit }) {
+                        return index
+                    }
+                }
+            }
+        }
+        return 0
+    }
+
+    private func performAISwaps() {
+        switch difficulty {
+        case .easy:
+            break
+        case .medium:
+            performMediumSwaps()
+        case .expert:
+            performExpertSwaps()
+        }
+    }
+
+    private func performMediumSwaps() {
+        for i in state.players.indices where state.players[i].isAI {
+            var hand = state.players[i].hand
+            var faceUp = state.players[i].faceUp
+
+            for h in 0..<hand.count {
+                for f in 0..<faceUp.count {
+                    if faceUpDesirability(hand[h]) > faceUpDesirability(faceUp[f]) {
+                        let temp = hand[h]
+                        hand[h] = faceUp[f]
+                        faceUp[f] = temp
+                    }
+                }
+            }
+
+            state.players[i].hand = hand
+            state.players[i].faceUp = faceUp
+        }
+    }
+
+    private func performExpertSwaps() {
+        for i in state.players.indices where state.players[i].isAI {
+            let allCards = state.players[i].hand + state.players[i].faceUp
+            var chosenFaceUp: [Card] = []
+
+            // Best setup: burn card (10) + matching pair
+            // Play the pair on empty pile after burning — sheds 3 cards in a row
+            if let ten = allCards.first(where: { $0.isBurn }) {
+                let candidates = allCards.filter { $0 != ten && !$0.isWild && !$0.isBurn }
+                let grouped = Dictionary(grouping: candidates) { $0.rank }
+                if let pair = grouped.values.first(where: { $0.count >= 2 }) {
+                    chosenFaceUp = [ten, pair[0], pair[1]]
+                }
+            }
+
+            if chosenFaceUp.isEmpty {
+                chosenFaceUp = Array(
+                    allCards.sorted { faceUpDesirability($0) > faceUpDesirability($1) }.prefix(3)
+                )
+            }
+
+            var remaining = allCards
+            for chosen in chosenFaceUp {
+                if let idx = remaining.firstIndex(of: chosen) {
+                    remaining.remove(at: idx)
+                }
+            }
+
+            state.players[i].faceUp = chosenFaceUp
+            state.players[i].hand = remaining.sorted { $0.rank < $1.rank }
+        }
+    }
+
+    private func faceUpDesirability(_ card: Card) -> Int {
+        if card.isWild { return 20 }
+        if card.isBurn { return 19 }
+        return card.rank.rawValue
     }
 
     // MARK: - Move Validation
 
     func canPlay(_ card: Card) -> Bool {
-        if card.isReset || card.isBurn { return true }
+        if card.isWild || card.isBurn { return true }
 
         if mustPlayUnderSeven {
             return card.rank <= .seven
@@ -132,7 +261,8 @@ class GameEngine {
             state.players[playerIndex].hand.append(card)
             state.players[playerIndex].hand.append(contentsOf: state.pile)
             state.pile.removeAll()
-            lastPileClearReason = .failedFlip
+            state.players[playerIndex].hand.sort { $0.rank < $1.rank }
+            lastEvent = .failedFlip
             mustPlayUnderSeven = false
             message = "\(state.players[playerIndex].name) flipped \(card.display) — picked up the pile!"
             advanceTurn()
@@ -162,6 +292,7 @@ class GameEngine {
             let card = state.players[playerIndex].drawPile.removeFirst()
             state.players[playerIndex].hand.append(card)
         }
+        state.players[playerIndex].hand.sort { $0.rank < $1.rank }
     }
 
     // MARK: - After Play Logic
@@ -184,14 +315,21 @@ class GameEngine {
 
         if card.isReverse {
             state.playDirection *= -1
+            lastEvent = .reverse
             message = "\(state.players[playerIndex].name) played \(card.display) — reversed!"
-        } else if card.isReset {
-            message = "\(state.players[playerIndex].name) played \(card.display) — pile reset!"
+        } else if card.isWild {
+            lastEvent = .wild
+            message = "\(state.players[playerIndex].name) played \(card.display) — wild!"
         } else if card.isSkip {
+            lastEvent = .skip
             message = "\(state.players[playerIndex].name) played \(card.display) — skip!"
             advanceTurn(skip: true)
             return
+        } else if card.isSeven {
+            lastEvent = .sevenPlayed
+            message = "\(state.players[playerIndex].name) played \(card.display)"
         } else {
+            lastEvent = .normal
             message = "\(state.players[playerIndex].name) played \(card.display)"
         }
 
@@ -199,8 +337,8 @@ class GameEngine {
     }
 
     private func checkForBurn(card: Card, playerIndex: Int) -> Bool {
-        guard pile.count >= 4 else { return false }
-        let topFour = pile.suffix(4)
+        guard state.pile.count >= 4 else { return false }
+        let topFour = state.pile.suffix(4)
         let allSameRank = topFour.allSatisfy { $0.rank == card.rank }
         if allSameRank {
             message = "Four \(card.rank.label)s — pile burned!"
@@ -210,11 +348,9 @@ class GameEngine {
         return false
     }
 
-    private var pile: [Card] { state.pile }
-
     private func burnPile(playerIndex: Int) {
         state.pile.removeAll()
-        lastPileClearReason = .burn
+        lastEvent = .burn
         mustPlayUnderSeven = false
 
         if checkWin(playerIndex: playerIndex) { return }
@@ -234,7 +370,8 @@ class GameEngine {
         let playerIndex = state.currentPlayerIndex
         state.players[playerIndex].hand.append(contentsOf: state.pile)
         state.pile.removeAll()
-        lastPileClearReason = .pickup
+        state.players[playerIndex].hand.sort { $0.rank < $1.rank }
+        lastEvent = .pickup
         mustPlayUnderSeven = false
         message = "\(state.players[playerIndex].name) picked up the pile"
         advanceTurn()
@@ -267,6 +404,10 @@ class GameEngine {
 
     private func checkWin(playerIndex: Int) -> Bool {
         if !state.players[playerIndex].hasCards {
+            let name = state.players[playerIndex].name
+            if !state.finishOrder.contains(name) {
+                state.finishOrder.append(name)
+            }
             if checkGameOver() { return true }
         }
         return false
@@ -289,20 +430,192 @@ class GameEngine {
     // MARK: - AI
 
     func performAITurn() {
+        switch difficulty {
+        case .easy: performEasyTurn()
+        case .medium: performMediumTurn()
+        case .expert: performExpertTurn()
+        }
+    }
+
+    // MARK: Easy — plays lowest single card, no grouping, wastes specials
+
+    private func performEasyTurn() {
         let player = state.currentPlayer
 
         if player.playingFrom == .faceDown {
-            let randomIndex = Int.random(in: 0..<player.faceDown.count)
-            playFaceDownAt(index: randomIndex)
+            playFaceDownAt(index: Int.random(in: 0..<player.faceDown.count))
             return
         }
 
         let playable = playableCards(for: player)
-        if let card = playable.sorted(by: { $0.rank < $1.rank }).first {
-            let matching = playable.filter { $0.rank == card.rank }
-            playCards(matching)
-        } else {
+        guard !playable.isEmpty else {
             pickUpPile()
+            return
         }
+
+        let lowest = playable.min(by: { $0.rank < $1.rank })!
+        playCards([lowest])
+    }
+
+    // MARK: Medium — groups by rank, completes four-of-a-kind, basic special management
+
+    private func performMediumTurn() {
+        let player = state.currentPlayer
+
+        if player.playingFrom == .faceDown {
+            playFaceDownAt(index: Int.random(in: 0..<player.faceDown.count))
+            return
+        }
+
+        let playable = playableCards(for: player)
+        guard !playable.isEmpty else {
+            pickUpPile()
+            return
+        }
+
+        let grouped = Dictionary(grouping: playable) { $0.rank }
+
+        if let topCard = state.topCard {
+            let topCount = state.pile.suffix(3).filter { $0.rank == topCard.rank }.count
+            if let matching = grouped[topCard.rank], matching.count + topCount >= 4 {
+                let needed = 4 - topCount
+                playCards(Array(matching.prefix(needed)))
+                return
+            }
+        }
+
+        let regular = playable.filter { !$0.isWild && !$0.isBurn }
+        let wilds = grouped[.two] ?? []
+        let burns = grouped[.ten] ?? []
+
+        if !regular.isEmpty {
+            let lowestRank = regular.min(by: { $0.rank < $1.rank })!.rank
+            let toPlay = regular.filter { $0.rank == lowestRank }
+            playCards(toPlay)
+            return
+        }
+
+        if !burns.isEmpty && (state.pile.count >= 3 || wilds.isEmpty) {
+            playCards([burns[0]])
+            return
+        }
+
+        if !wilds.isEmpty {
+            playCards([wilds[0]])
+            return
+        }
+
+        if !burns.isEmpty {
+            playCards([burns[0]])
+            return
+        }
+
+        pickUpPile()
+    }
+
+    // MARK: Expert — strategic special management, targeted 7s, pile pressure, mid-range play
+
+    private func performExpertTurn() {
+        let player = state.currentPlayer
+
+        if player.playingFrom == .faceDown {
+            playFaceDownAt(index: Int.random(in: 0..<player.faceDown.count))
+            return
+        }
+
+        let playable = playableCards(for: player)
+        guard !playable.isEmpty else {
+            pickUpPile()
+            return
+        }
+
+        let grouped = Dictionary(grouping: playable) { $0.rank }
+        let regular = playable.filter { !$0.isWild && !$0.isBurn }
+        let wilds = grouped[.two] ?? []
+        let burns = grouped[.ten] ?? []
+        let sevens = grouped[.seven] ?? []
+        let normalRegular = regular.filter { !$0.isSeven }
+
+        // 1. Always complete a four-of-a-kind burn — free pile clear + go again
+        if let topCard = state.topCard {
+            let topCount = state.pile.suffix(3).filter { $0.rank == topCard.rank }.count
+            if let matching = grouped[topCard.rank], matching.count + topCount >= 4 {
+                let needed = 4 - topCount
+                playCards(Array(matching.prefix(needed)))
+                return
+            }
+        }
+
+        // 2. Targeted 7: play when next opponent is on face-up with high cards
+        if !sevens.isEmpty && canPlay(sevens[0]) {
+            if let next = nextActivePlayer(),
+               next.hand.isEmpty && next.drawPile.isEmpty && !next.faceUp.isEmpty {
+                let highCount = next.faceUp.filter { $0.rank.rawValue >= Rank.jack.rawValue }.count
+                if highCount >= 2 {
+                    playCards([sevens[0]])
+                    return
+                }
+            }
+        }
+
+        // 3. Lead with a rank held 3+ of — set up a potential self-burn next turn
+        if !normalRegular.isEmpty {
+            let normalGrouped = Dictionary(grouping: normalRegular) { $0.rank }
+            for (_, cards) in normalGrouped.sorted(by: { $0.key < $1.key }) {
+                if cards.count >= 3 && canPlay(cards[0]) {
+                    playCards(cards)
+                    return
+                }
+            }
+        }
+
+        // 4. Play from the middle of the range — protect low cards (insurance for low piles)
+        //    and high cards (insurance for high piles)
+        if !normalRegular.isEmpty {
+            let sorted = normalRegular.sorted { $0.rank < $1.rank }
+            let midRank = sorted[sorted.count / 2].rank
+            let toPlay = normalRegular.filter { $0.rank == midRank }
+            playCards(toPlay)
+            return
+        }
+
+        // 5. Play 7 normally if it's the only regular card left
+        if !sevens.isEmpty && canPlay(sevens[0]) {
+            playCards([sevens[0]])
+            return
+        }
+
+        // 6. Pile pressure: only burn large piles (5+) — hold the 10 as insurance
+        //    and let the pile grow to threaten opponents who don't have a burn
+        if !burns.isEmpty && state.pile.count >= 5 {
+            playCards([burns[0]])
+            return
+        }
+
+        // 7. Wild as last resort before burning a small pile
+        if !wilds.isEmpty {
+            playCards([wilds[0]])
+            return
+        }
+
+        // 8. Forced burn on a small pile — no other option
+        if !burns.isEmpty {
+            playCards([burns[0]])
+            return
+        }
+
+        pickUpPile()
+    }
+
+    private func nextActivePlayer() -> Player? {
+        let count = state.players.count
+        var idx = state.currentPlayerIndex
+        for _ in 0..<count {
+            idx = ((idx + state.playDirection) % count + count) % count
+            if state.players[idx].hasCards && idx != state.currentPlayerIndex {
+                return state.players[idx]
+            }
+        }
+        return nil
     }
 }
