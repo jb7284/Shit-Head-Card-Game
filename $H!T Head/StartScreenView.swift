@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct StartScreenView: View {
-    @Binding var playerCount: Int
     @Binding var difficulty: Difficulty
 
     let onDeal: () -> Void
@@ -18,7 +17,7 @@ struct StartScreenView: View {
                 Spacer()
                 title
                 Spacer()
-                setupControls
+                difficultyPicker
                 Spacer().frame(height: 24)
                 dealButton
                 Spacer().frame(height: 16)
@@ -39,35 +38,6 @@ struct StartScreenView: View {
                 )
             )
             .shadow(color: .black.opacity(0.6), radius: 4, y: 2)
-    }
-
-    private var setupControls: some View {
-        VStack(spacing: 20) {
-            playerCountPicker
-            difficultyPicker
-        }
-    }
-
-    private var playerCountPicker: some View {
-        VStack(spacing: 10) {
-            pickerTitle("Players")
-
-            HStack(spacing: 8) {
-                ForEach(2...6, id: \.self) { count in
-                    SelectionChip(
-                        isSelected: playerCount == count,
-                        width: 42,
-                        height: 42,
-                        selectedScale: 1.08
-                    ) {
-                        playerCount = count
-                    } label: {
-                        Text("\(count)")
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                    }
-                }
-            }
-        }
     }
 
     private var difficultyPicker: some View {

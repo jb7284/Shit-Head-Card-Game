@@ -23,31 +23,22 @@ class GameEngine {
 
     // MARK: - Setup
 
-    func startNewGame(playerCount: Int = 2, difficulty: Difficulty = .medium) {
+    func startNewGame(difficulty: Difficulty = .medium) {
         state = GameState()
         self.difficulty = difficulty
-        let clamped = min(max(playerCount, 2), 6)
-
-        let deckCount: Int
-        if clamped <= 2 {
-            deckCount = 1
-        } else if clamped <= 4 {
-            deckCount = 2
-        } else {
-            deckCount = 3
-        }
-        state.deck = Deck.standard(deckCount: deckCount)
+        state.deck = Deck.standard(deckCount: 2)
 
         let aiCharacters: [(name: String, avatar: String)] = [
-            ("Marco", "avatar_marco"),
-            ("Sofia", "avatar_sofia"),
-            ("Dante", "avatar_dante"),
-            ("Ava", "avatar_ava"),
-            ("Jake", "avatar_jake"),
+            ("Marco",    "avatar_marco"),
+            ("Sofia",    "avatar_sofia"),
+            ("Dante",    "avatar_dante"),
+            ("Ava",      "avatar_ava"),
+            ("Jake",     "avatar_jake"),
+            ("Scarlett", "avatar_scarlett"),
         ]
+        let chosen = aiCharacters.shuffled().prefix(3)
         var players: [Player] = [Player(id: "human", name: "You", avatar: "", isAI: false)]
-        for i in 0..<(clamped - 1) {
-            let char = aiCharacters[i]
+        for (i, char) in chosen.enumerated() {
             players.append(Player(id: "ai\(i)", name: char.name, avatar: char.avatar, isAI: true))
         }
         state.players = players

@@ -3,7 +3,6 @@ import SwiftUI
 struct ContentView: View {
     @State private var engine = GameEngine()
     @State private var selectedCards: [Card] = []
-    @State private var playerCount: Int = 2
     @State private var difficulty: Difficulty = .medium
 
     @State private var burnEffect = false
@@ -74,7 +73,6 @@ struct ContentView: View {
         switch engine.state.phase {
         case .dealing:
             StartScreenView(
-                playerCount: $playerCount,
                 difficulty: $difficulty,
                 onDeal: startGame,
                 onShowRules: { showRules = true }
@@ -148,7 +146,7 @@ struct ContentView: View {
         selectedCards.removeAll()
         dealRevealed = false
         withAnimation(springAnim) {
-            engine.startNewGame(playerCount: playerCount, difficulty: difficulty)
+            engine.startNewGame(difficulty: difficulty)
         }
     }
 

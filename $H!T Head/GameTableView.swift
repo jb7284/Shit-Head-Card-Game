@@ -25,15 +25,16 @@ struct GameTableView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !opponentLayout.top.isEmpty {
-                topOpponentsRow
-                    .padding(.bottom, 4)
-            }
+            topOpponent
+                .padding(.bottom, 4)
 
             HStack(spacing: 0) {
-                if let left = opponentLayout.left {
-                    SideOpponentView(player: left, active: isCurrentPlayer(left), isNext: isNextPlayer(left), turnPulse: turnPulse)
-                }
+                SideOpponentView(
+                    player: opponentLayout.left,
+                    active: isCurrentPlayer(opponentLayout.left),
+                    isNext: isNextPlayer(opponentLayout.left),
+                    turnPulse: turnPulse
+                )
 
                 Spacer(minLength: 0)
 
@@ -53,10 +54,13 @@ struct GameTableView: View {
 
                 Spacer(minLength: 0)
 
-                if let right = opponentLayout.right {
-                    SideOpponentView(player: right, active: isCurrentPlayer(right), isNext: isNextPlayer(right), turnPulse: turnPulse)
-                        .padding(.trailing, 20)
-                }
+                SideOpponentView(
+                    player: opponentLayout.right,
+                    active: isCurrentPlayer(opponentLayout.right),
+                    isNext: isNextPlayer(opponentLayout.right),
+                    turnPulse: turnPulse
+                )
+                .padding(.trailing, 20)
             }
 
             if let human = humanPlayer {
@@ -81,13 +85,15 @@ struct GameTableView: View {
         .padding(.horizontal, 16)
     }
 
-    private var topOpponentsRow: some View {
-        HStack(spacing: 6) {
-            ForEach(opponentLayout.top) { ai in
-                TopOpponentView(player: ai, active: isCurrentPlayer(ai), isNext: isNextPlayer(ai), turnPulse: turnPulse)
-                    .transition(.scale.combined(with: .opacity))
-            }
-        }
+    private var topOpponent: some View {
+        let player = opponentLayout.top
+        return TopOpponentView(
+            player: player,
+            active: isCurrentPlayer(player),
+            isNext: isNextPlayer(player),
+            turnPulse: turnPulse
+        )
+        .transition(.scale.combined(with: .opacity))
         .padding(.horizontal, 12)
         .padding(.top, 36)
     }
@@ -127,33 +133,15 @@ struct GameTableView: View {
 }
 
 struct OpponentLayout {
-    let top: [Player]
-    let left: Player?
-    let right: Player?
+    let left: Player
+    let top: Player
+    let right: Player
 
     init(players: [Player]) {
         let opponents = players.filter { $0.isAI }
-        switch opponents.count {
-        case 1, 2:
-            top = opponents
-            left = nil
-            right = nil
-        case 3:
-            top = [opponents[1]]
-            left = opponents[0]
-            right = opponents.last
-        case 4:
-            top = [opponents[1], opponents[2]]
-            left = opponents[0]
-            right = opponents.last
-        case 5:
-            top = [opponents[1], opponents[2], opponents[3]]
-            left = opponents[0]
-            right = opponents.last
-        default:
-            top = opponents
-            left = nil
-            right = nil
-        }
+        precondition(opponents.count == 3, "OpponentLayout requires exactly 3 AI opponents")
+        left = opponents[0]
+        top = opponents[1]
+        right = opponents[2]
     }
 }
