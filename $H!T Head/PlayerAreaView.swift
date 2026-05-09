@@ -63,6 +63,8 @@ struct PlayerAreaView: View {
         let slot = ZStack {
             if index < human.faceDown.count {
                 CardView(card: human.faceDown[index], faceUp: false, small: true)
+                    .reportCardFrame(human.faceDown[index].uid)
+                    .hideIfInFlight(human.faceDown[index].uid)
             }
             if index < human.faceUp.count {
                 faceUpCard(human.faceUp[index], isPlayingFaceUp: isPlayingFaceUp)
@@ -101,6 +103,8 @@ struct PlayerAreaView: View {
             selected: isSelected,
             small: true
         )
+        .reportCardFrame(card.uid)
+        .hideIfInFlight(card.uid)
         .offset(y: -10)
         .offset(
             x: (isDragTarget || isGroupedFaceUp) ? dragOffset.width : 0,

@@ -50,7 +50,7 @@ struct TopOpponentView: View {
             }
 
             VStack(alignment: .leading, spacing: 4 * gs) {
-                OpponentHandFan(cards: player.hand, avatarSize: 80 * gs)
+                OpponentHandFan(cards: player.hand, avatarSize: 80 * gs, playerID: player.id)
                     .opacity(active ? 1.0 : 0.5)
 
                 HStack(spacing: 3 * gs) {
@@ -58,9 +58,13 @@ struct TopOpponentView: View {
                         ZStack {
                             if i < player.faceDown.count {
                                 OpponentCardView()
+                                    .reportCardFrame(player.faceDown[i].uid)
+                                    .hideIfInFlight(player.faceDown[i].uid)
                             }
                             if i < player.faceUp.count {
                                 OpponentCardView(card: player.faceUp[i])
+                                    .reportCardFrame(player.faceUp[i].uid)
+                                    .hideIfInFlight(player.faceUp[i].uid)
                                     .offset(y: -8 * gs)
                             }
                         }
@@ -106,7 +110,7 @@ struct SideOpponentView: View {
             }
 
             VStack(spacing: 4 * gs) {
-                OpponentHandFan(cards: player.hand, avatarSize: 84 * gs)
+                OpponentHandFan(cards: player.hand, avatarSize: 84 * gs, playerID: player.id)
                     .opacity(active ? 1.0 : 0.5)
 
                 VStack(spacing: 3 * gs) {
@@ -114,9 +118,13 @@ struct SideOpponentView: View {
                         ZStack {
                             if i < player.faceDown.count {
                                 OpponentCardView()
+                                    .reportCardFrame(player.faceDown[i].uid)
+                                    .hideIfInFlight(player.faceDown[i].uid)
                             }
                             if i < player.faceUp.count {
                                 OpponentCardView(card: player.faceUp[i])
+                                    .reportCardFrame(player.faceUp[i].uid)
+                                    .hideIfInFlight(player.faceUp[i].uid)
                                     .offset(x: 8 * gs)
                             }
                         }
@@ -137,6 +145,7 @@ struct SideOpponentView: View {
 struct OpponentHandFan: View {
     let cards: [Card]
     let avatarSize: CGFloat
+    let playerID: String
 
     @Environment(\.gameScale) private var gs
 
@@ -168,12 +177,15 @@ struct OpponentHandFan: View {
 
     var body: some View {
         ZStack {
-            ForEach(Array(cards.enumerated()), id: \.element.uid) { index, _ in
+            ForEach(Array(cards.enumerated()), id: \.element.uid) { index, card in
                 OpponentCardView()
+                    .reportCardFrame(card.uid)
+                    .hideIfInFlight(card.uid)
                     .offset(x: CGFloat(index) * advance - totalWidth / 2 + cardWidth / 2)
             }
         }
-        .frame(width: totalWidth, height: cardHeight)
+        .frame(width: max(totalWidth, cardWidth), height: cardHeight)
+        .reportHandCenter(playerID)
     }
 }
 

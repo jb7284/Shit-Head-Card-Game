@@ -381,13 +381,15 @@ struct PileLandingZone: View {
                     .offset(x: CGFloat(index - 1) * 2 * gs, y: CGFloat(index) * 1.5 * gs)
             }
 
+            Color.clear
+                .frame(width: 58 * gs, height: 82 * gs)
+                .reportPileFrame()
+
             if let topCard {
                 CardView(card: topCard, faceUp: true)
+                    .hideIfInFlight(topCard.uid)
                     .rotationEffect(.degrees(Double((pileCount % 5) - 2) * 2.5))
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.5).combined(with: .opacity),
-                        removal: .scale(scale: 1.2).combined(with: .opacity)
-                    ))
+                    .transition(.opacity)
             }
         }
     }
