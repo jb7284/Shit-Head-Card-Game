@@ -75,6 +75,7 @@ struct FanHandView<CardGesture: Gesture>: View {
             y: (isDragTarget || isGroupedHand) ? dragOffset.height : 0
         )
         .scaleEffect((isDragTarget || isGroupedHand) ? 1.12 : 1.0)
+        .rejectionShake(card.uid)
         .zIndex(isDragTarget ? 200 : (isGroupedHand ? 150 : (isSelected ? 100 : Double(index))))
         .onTapGesture(count: 2) {
             guard isMyTurn else { return }

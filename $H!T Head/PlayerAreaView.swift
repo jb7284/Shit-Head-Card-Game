@@ -107,6 +107,7 @@ struct PlayerAreaView: View {
             y: (isDragTarget || isGroupedFaceUp) ? dragOffset.height : 0
         )
         .scaleEffect((isDragTarget || isGroupedFaceUp) ? 1.2 : 1.0)
+        .rejectionShake(card.uid)
         .zIndex(isDragTarget ? 200 : (isGroupedFaceUp ? 150 : (isSelected ? 100 : 0)))
     }
 

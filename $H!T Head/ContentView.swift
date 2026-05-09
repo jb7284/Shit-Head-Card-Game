@@ -16,9 +16,16 @@ struct ContentView: View {
     @State private var dragOffset: CGSize = .zero
     @State private var aiTask: Task<Void, Never>?
 
+    @State private var rejectionShakeID: UUID? = nil
+    @State private var rejectionShakeTrigger: CGFloat = 0
+    @State private var rejectionMessage: String? = nil
+    @State private var rejectionMessageTask: Task<Void, Never>?
+
     @Namespace private var swapNamespace
 
     private let springAnim = Animation.spring(response: 0.4, dampingFraction: 0.75)
+    private let rejectionShakeDuration: TimeInterval = 0.45
+    private let rejectionMessageDuration: TimeInterval = 1.5
 
     var body: some View {
         ZStack {
@@ -31,7 +38,17 @@ struct ContentView: View {
 
                 phaseContent
                     .environment(\.gameScale, scale)
+                    .environment(\.rejectionShakeID, rejectionShakeID)
+                    .environment(\.rejectionShakeTrigger, rejectionShakeTrigger)
                     .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
+        .overlay(alignment: .top) {
+            if let message = rejectionMessage {
+                RejectionTooltip(message: message)
+                    .padding(.top, 60)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .allowsHitTesting(false)
             }
         }
         .onChange(of: engine.lastEvent) { _, event in
@@ -213,7 +230,10 @@ struct ContentView: View {
     }
 
     private func handleCardTap(_ card: Card) {
-        guard engine.canPlay(card) else { return }
+        guard engine.canPlay(card) else {
+            triggerRejectionFeedback(for: card)
+            return
+        }
 
         withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
             toggleSelection(for: card)
@@ -221,7 +241,10 @@ struct ContentView: View {
     }
 
     private func handleCardDoubleTap(_ card: Card) {
-        guard engine.canPlay(card) else { return }
+        guard engine.canPlay(card) else {
+            triggerRejectionFeedback(for: card)
+            return
+        }
 
         if selectedCards.isEmpty || selectedCards[0].rank != card.rank {
             selectedCards = [card]
@@ -232,7 +255,10 @@ struct ContentView: View {
     }
 
     private func beginCardDrag(_ card: Card) {
-        guard engine.canPlay(card) else { return }
+        guard engine.canPlay(card) else {
+            triggerRejectionFeedback(for: card)
+            return
+        }
 
         withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
             if !selectedCards.contains(card) {
@@ -240,6 +266,45 @@ struct ContentView: View {
             }
             dragCardID = card.id
         }
+    }
+
+    private func triggerRejectionFeedback(for card: Card) {
+        guard engine.difficulty == .easy else { return }
+
+        rejectionShakeID = card.uid
+        rejectionShakeTrigger = 0
+        withAnimation(.linear(duration: rejectionShakeDuration)) {
+            rejectionShakeTrigger = 1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + rejectionShakeDuration + 0.05) {
+            if rejectionShakeID == card.uid {
+                rejectionShakeID = nil
+                rejectionShakeTrigger = 0
+            }
+        }
+
+        let reason = rejectionReason(for: card)
+        rejectionMessageTask?.cancel()
+        withAnimation(.easeOut(duration: 0.2)) {
+            rejectionMessage = reason
+        }
+        rejectionMessageTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(rejectionMessageDuration))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeIn(duration: 0.3)) {
+                rejectionMessage = nil
+            }
+        }
+    }
+
+    private func rejectionReason(for card: Card) -> String {
+        if engine.mustPlayUnderSeven {
+            return "Must play 7 or lower — a 7 was played"
+        }
+        if let top = engine.state.effectiveTopCard {
+            return "Must play \(top.rank.label) or higher (or a 2 / 10)"
+        }
+        return "Can't play that card right now"
     }
 
     private func updateCardDrag(_ translation: CGSize) {
