@@ -41,10 +41,6 @@ struct TopOpponentView: View {
                     Text("OUT")
                         .font(.system(size: 8 * gs, weight: .heavy))
                         .foregroundStyle(.green)
-                } else if !player.hand.isEmpty {
-                    Text("\(player.hand.count) in hand")
-                        .font(.system(size: 10 * gs, weight: .bold))
-                        .foregroundStyle(Color(red: 0.85, green: 0.72, blue: 0.38))
                 }
                 if isNext && player.hasCards {
                     Text("Next")
@@ -53,7 +49,10 @@ struct TopOpponentView: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 2 * gs) {
+            VStack(alignment: .leading, spacing: 4 * gs) {
+                OpponentHandFan(cards: player.hand, avatarSize: 80 * gs)
+                    .opacity(active ? 1.0 : 0.5)
+
                 HStack(spacing: 3 * gs) {
                     ForEach(0..<3, id: \.self) { i in
                         ZStack {
@@ -98,10 +97,6 @@ struct SideOpponentView: View {
                     Text("OUT")
                         .font(.system(size: 8 * gs, weight: .heavy))
                         .foregroundStyle(.green)
-                } else if !player.hand.isEmpty {
-                    Text("\(player.hand.count) in hand")
-                        .font(.system(size: 10 * gs, weight: .bold))
-                        .foregroundStyle(Color(red: 0.85, green: 0.72, blue: 0.38))
                 }
                 if isNext && player.hasCards {
                     Text("Next")
@@ -110,27 +105,75 @@ struct SideOpponentView: View {
                 }
             }
 
-            VStack(spacing: 3 * gs) {
-                ForEach(0..<3, id: \.self) { i in
-                    ZStack {
-                        if i < player.faceDown.count {
-                            OpponentCardView()
-                        }
-                        if i < player.faceUp.count {
-                            OpponentCardView(card: player.faceUp[i])
-                                .offset(x: 8 * gs)
+            VStack(spacing: 4 * gs) {
+                OpponentHandFan(cards: player.hand, avatarSize: 84 * gs)
+                    .opacity(active ? 1.0 : 0.5)
+
+                VStack(spacing: 3 * gs) {
+                    ForEach(0..<3, id: \.self) { i in
+                        ZStack {
+                            if i < player.faceDown.count {
+                                OpponentCardView()
+                            }
+                            if i < player.faceUp.count {
+                                OpponentCardView(card: player.faceUp[i])
+                                    .offset(x: 8 * gs)
+                            }
                         }
                     }
-                }
 
-                if player.drawPile.count > 0 {
-                    DrawPileStack(count: player.drawPile.count, mini: true)
-                        .padding(.top, 4 * gs)
+                    if player.drawPile.count > 0 {
+                        DrawPileStack(count: player.drawPile.count, mini: true)
+                            .padding(.top, 4 * gs)
+                    }
                 }
+                .opacity(active ? 1.0 : 0.5)
             }
-            .opacity(active ? 1.0 : 0.5)
         }
         .animation(.easeInOut(duration: 0.3), value: active)
+    }
+}
+
+struct OpponentHandFan: View {
+    let cards: [Card]
+    let avatarSize: CGFloat
+
+    @Environment(\.gameScale) private var gs
+
+    private var cardWidth: CGFloat { 30 * gs }
+    private var cardHeight: CGFloat { 40 * gs }
+
+    private var baseOverlap: CGFloat {
+        let n = cards.count
+        if n <= 6 { return 0.40 }
+        if n >= 15 { return 0.70 }
+        let t = CGFloat(n - 6) / 9
+        return 0.40 + (0.70 - 0.40) * t
+    }
+
+    private var widthCap: CGFloat { avatarSize * 2.5 }
+
+    private var advance: CGFloat {
+        guard cards.count > 1 else { return 0 }
+        let baseAdvance = cardWidth * (1 - baseOverlap)
+        let baseTotal = cardWidth + baseAdvance * CGFloat(cards.count - 1)
+        if baseTotal <= widthCap { return baseAdvance }
+        return max(0, (widthCap - cardWidth) / CGFloat(cards.count - 1))
+    }
+
+    private var totalWidth: CGFloat {
+        guard !cards.isEmpty else { return 0 }
+        return cardWidth + advance * CGFloat(cards.count - 1)
+    }
+
+    var body: some View {
+        ZStack {
+            ForEach(Array(cards.enumerated()), id: \.element.uid) { index, _ in
+                OpponentCardView()
+                    .offset(x: CGFloat(index) * advance - totalWidth / 2 + cardWidth / 2)
+            }
+        }
+        .frame(width: totalWidth, height: cardHeight)
     }
 }
 
