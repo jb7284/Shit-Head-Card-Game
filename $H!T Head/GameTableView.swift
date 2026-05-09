@@ -45,6 +45,7 @@ struct GameTableView: View {
                         showDropTarget: dragCardID != nil,
                         burnEffect: burnEffect,
                         wildEffect: wildEffect,
+                        canPickUpPile: canPickUpPile,
                         mustPickUpPile: mustPickUpPile,
                         onPickUpPile: onPickUpPile
                     )
@@ -100,12 +101,15 @@ struct GameTableView: View {
         engine.state.phase == .playing && !engine.state.currentPlayer.isAI
     }
 
-    private var mustPickUpPile: Bool {
+    private var canPickUpPile: Bool {
         engine.state.phase == .playing
             && !engine.state.currentPlayer.isAI
             && engine.state.currentPlayer.playingFrom != .faceDown
             && !engine.state.pile.isEmpty
-            && !engine.hasPlayableCard(for: engine.state.currentPlayer)
+    }
+
+    private var mustPickUpPile: Bool {
+        canPickUpPile && !engine.hasPlayableCard(for: engine.state.currentPlayer)
     }
 
     private func isCurrentPlayer(_ player: Player) -> Bool {
