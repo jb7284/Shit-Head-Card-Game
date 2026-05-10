@@ -15,9 +15,20 @@ struct ContentView: View {
     @State private var dragOffset: CGSize = .zero
     @State private var aiTask: Task<Void, Never>?
 
+    @State private var cardFrames: [UUID: CGRect] = [:]
+    @State private var pileFrame: CGRect = .zero
+    @State private var handCenterFrames: [String: CGRect] = [:]
+    @State private var inFlightCardIDs: Set<UUID> = []
+    @State private var activeFlights: [CardFlight] = []
+
     @Namespace private var swapNamespace
 
     private let springAnim = Animation.spring(response: 0.4, dampingFraction: 0.75)
+    private let playStaggerSeconds: TimeInterval = 0.085
+    private let pickupStaggerSeconds: TimeInterval = 0.05
+    private let playFlightDuration: TimeInterval = 0.45
+    private let pickupFlightDuration: TimeInterval = 0.4
+    private let aiFlightLayoutDelay: Duration = .milliseconds(30)
 
     var body: some View {
         ZStack {
@@ -28,9 +39,21 @@ struct ContentView: View {
                 let rawScale = min(geo.size.width / 520, geo.size.height / 400)
                 let scale = min(max(rawScale, 0.8), 2.0)
 
-                phaseContent
-                    .environment(\.gameScale, scale)
-                    .frame(width: geo.size.width, height: geo.size.height)
+                ZStack {
+                    phaseContent
+                        .frame(width: geo.size.width, height: geo.size.height)
+
+                    ForEach(activeFlights) { flight in
+                        FlyingCardView(flight: flight, onComplete: handleFlightComplete)
+                    }
+                }
+                .environment(\.gameScale, scale)
+                .environment(\.inFlightCardIDs, inFlightCardIDs)
+                .coordinateSpace(name: gameCoordinateSpace)
+                .frame(width: geo.size.width, height: geo.size.height)
+                .onPreferenceChange(CardFramePreferenceKey.self) { cardFrames = $0 }
+                .onPreferenceChange(PileFramePreferenceKey.self) { pileFrame = $0 }
+                .onPreferenceChange(HandCenterPreferenceKey.self) { handCenterFrames = $0 }
             }
         }
         .onChange(of: engine.lastEvent) { _, event in
@@ -41,6 +64,11 @@ struct ContentView: View {
         }
         .onChange(of: engine.state.turnNumber) { _, _ in
             triggerAI()
+        }
+        .onChange(of: engine.state.phase) { _, phase in
+            if phase == .finished {
+                clearFlightsAfterAnimationsSettle()
+            }
         }
         .onAppear {
             restartTurnPulse()
@@ -144,6 +172,8 @@ struct ContentView: View {
 
     private func startGame() {
         selectedCards.removeAll()
+        activeFlights.removeAll()
+        inFlightCardIDs.removeAll()
         dealRevealed = false
         withAnimation(springAnim) {
             engine.startNewGame(difficulty: difficulty)
@@ -197,16 +227,20 @@ struct ContentView: View {
 
     private func pickUpPile() {
         selectedCards.removeAll()
+        let pre = snapshot()
         withAnimation(springAnim) {
             engine.pickUpPile()
         }
+        spawnFlights(computeFlights(pre: pre, post: snapshot()))
         triggerAI()
     }
 
     private func playFaceDownCard(at index: Int) {
+        let pre = snapshot()
         withAnimation(springAnim) {
             engine.playFaceDownAt(index: index)
         }
+        spawnFlights(computeFlights(pre: pre, post: snapshot()))
         triggerAI()
     }
 
@@ -271,10 +305,12 @@ struct ContentView: View {
     }
 
     private func playSelectedCards() {
+        let pre = snapshot()
         withAnimation(springAnim) {
             engine.playCards(selectedCards)
             selectedCards.removeAll()
         }
+        spawnFlights(computeFlights(pre: pre, post: snapshot()))
         triggerAI()
     }
 
@@ -312,10 +348,156 @@ struct ContentView: View {
                   engine.state.phase == .playing,
                   engine.state.currentPlayer.isAI
             else { return }
+
+            let pre = snapshot()
             withAnimation(springAnim) {
                 engine.performAITurn()
             }
+
+            try? await Task.sleep(for: aiFlightLayoutDelay)
+            guard !Task.isCancelled else { return }
+            spawnFlights(computeFlights(pre: pre, post: snapshot()))
         }
+    }
+
+    private struct StateSnapshot {
+        let players: [Player]
+        let pile: [Card]
+    }
+
+    private func snapshot() -> StateSnapshot {
+        StateSnapshot(players: engine.state.players, pile: engine.state.pile)
+    }
+
+    private func spawnFlights(_ flights: [CardFlight]) {
+        guard !flights.isEmpty else { return }
+        inFlightCardIDs.formUnion(flights.map { $0.id })
+        activeFlights.append(contentsOf: flights)
+    }
+
+    private func handleFlightComplete(_ id: UUID) {
+        inFlightCardIDs.remove(id)
+        activeFlights.removeAll { $0.id == id }
+    }
+
+    private func clearFlightsAfterAnimationsSettle() {
+        let settleDelay = max(playFlightDuration, pickupFlightDuration) + 0.2
+        DispatchQueue.main.asyncAfter(deadline: .now() + settleDelay) {
+            guard engine.state.phase == .finished else { return }
+            activeFlights.removeAll()
+            inFlightCardIDs.removeAll()
+        }
+    }
+
+    private func computeFlights(pre: StateSnapshot, post: StateSnapshot) -> [CardFlight] {
+        guard pileFrame != .zero else { return [] }
+
+        var flights: [CardFlight] = []
+        var playStagger: Int = 0
+        var pickupStaggerByPlayer: [String: Int] = [:]
+
+        let postPileSet = Set(post.pile.map { $0.uid })
+        let prePileSet = Set(pre.pile.map { $0.uid })
+
+        for (playerIndex, postPlayer) in post.players.enumerated() {
+            guard playerIndex < pre.players.count else { continue }
+            let prePlayer = pre.players[playerIndex]
+            let isAI = prePlayer.isAI
+
+            let postHandSet = Set(postPlayer.hand.map { $0.uid })
+            let postFaceUpSet = Set(postPlayer.faceUp.map { $0.uid })
+            let postFaceDownSet = Set(postPlayer.faceDown.map { $0.uid })
+
+            // Plays from hand → pile
+            for card in prePlayer.hand
+            where !postHandSet.contains(card.uid) && postPileSet.contains(card.uid) {
+                guard let from = sourceFrame(for: card, player: prePlayer) else { continue }
+                appendPlayFlight(
+                    card: card,
+                    from: from,
+                    startsFaceUp: !isAI,
+                    playStagger: &playStagger,
+                    flights: &flights
+                )
+            }
+
+            // Plays from face-up → pile
+            for card in prePlayer.faceUp
+            where !postFaceUpSet.contains(card.uid) && postPileSet.contains(card.uid) {
+                guard let from = sourceFrame(for: card, player: prePlayer) else { continue }
+                appendPlayFlight(
+                    card: card,
+                    from: from,
+                    startsFaceUp: true,
+                    playStagger: &playStagger,
+                    flights: &flights
+                )
+            }
+
+            // Plays from face-down → pile
+            for card in prePlayer.faceDown
+            where !postFaceDownSet.contains(card.uid) && postPileSet.contains(card.uid) {
+                guard let from = sourceFrame(for: card, player: prePlayer) else { continue }
+                appendPlayFlight(
+                    card: card,
+                    from: from,
+                    startsFaceUp: false,
+                    playStagger: &playStagger,
+                    flights: &flights
+                )
+            }
+
+            // Pickups: pile cards that ended up in this player's hand
+            let preHandSet = Set(prePlayer.hand.map { $0.uid })
+            let pickedUp = postPlayer.hand.filter {
+                !preHandSet.contains($0.uid) && prePileSet.contains($0.uid)
+            }
+            guard !pickedUp.isEmpty else { continue }
+
+            let destination = handCenterFrames[postPlayer.id] ?? cardFrames[postPlayer.hand.first?.uid ?? UUID()]
+            guard let to = destination else { continue }
+
+            for card in pickedUp {
+                let stagger = pickupStaggerByPlayer[postPlayer.id, default: 0]
+                pickupStaggerByPlayer[postPlayer.id] = stagger + 1
+                flights.append(CardFlight(
+                    id: card.uid,
+                    card: card,
+                    from: pileFrame,
+                    to: to,
+                    startsFaceUp: true,
+                    endsFaceUp: !isAI,
+                    startDelay: TimeInterval(stagger) * pickupStaggerSeconds,
+                    duration: pickupFlightDuration
+                ))
+            }
+        }
+
+        return flights
+    }
+
+    private func sourceFrame(for card: Card, player: Player) -> CGRect? {
+        cardFrames[card.uid] ?? handCenterFrames[player.id]
+    }
+
+    private func appendPlayFlight(
+        card: Card,
+        from: CGRect,
+        startsFaceUp: Bool,
+        playStagger: inout Int,
+        flights: inout [CardFlight]
+    ) {
+        flights.append(CardFlight(
+            id: card.uid,
+            card: card,
+            from: from,
+            to: pileFrame,
+            startsFaceUp: startsFaceUp,
+            endsFaceUp: true,
+            startDelay: TimeInterval(playStagger) * playStaggerSeconds,
+            duration: playFlightDuration
+        ))
+        playStagger += 1
     }
 
     private func triggerBurnEffect() {

@@ -35,6 +35,7 @@ struct FanHandView<CardGesture: Gesture>: View {
                     )
                 }
             }
+            .reportHandCenter(human.id)
         }
         .frame(height: 105 * gs)
     }
@@ -64,6 +65,8 @@ struct FanHandView<CardGesture: Gesture>: View {
             selected: isSelected,
             dimmed: !isMyTurn
         )
+        .reportCardFrame(card.uid)
+        .hideIfInFlight(card.uid)
         .rotationEffect(.degrees((isDragTarget || isGroupedHand) ? 0 : angle), anchor: .bottom)
         .offset(y: (isDragTarget || isGroupedHand) ? 0 : yOffset + hintNudge)
         .position(

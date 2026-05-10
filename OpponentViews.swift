@@ -35,7 +35,7 @@ struct TopOpponentView: View {
             opponentIdentity
 
             VStack(alignment: .leading, spacing: 4 * gs) {
-                OpponentHandFan(cards: player.hand, avatarSize: 80 * gs)
+                OpponentHandFan(cards: player.hand, avatarSize: 80 * gs, playerID: player.id)
                     .opacity(active ? 1.0 : 0.5)
 
                 HStack(spacing: 3 * gs) {
@@ -43,9 +43,13 @@ struct TopOpponentView: View {
                         ZStack {
                             if i < player.faceDown.count {
                                 OpponentCardView()
+                                    .reportCardFrame(player.faceDown[i].uid)
+                                    .hideIfInFlight(player.faceDown[i].uid)
                             }
                             if i < player.faceUp.count {
                                 OpponentCardView(card: player.faceUp[i])
+                                    .reportCardFrame(player.faceUp[i].uid)
+                                    .hideIfInFlight(player.faceUp[i].uid)
                                     .offset(y: -8 * gs)
                             }
                         }
@@ -94,7 +98,7 @@ struct SideOpponentView: View {
         HStack(alignment: .center, spacing: 8 * gs) {
             opponentIdentity
 
-            SideOpponentHandFan(cards: player.hand, avatarSize: 84 * gs)
+            SideOpponentHandFan(cards: player.hand, avatarSize: 84 * gs, playerID: player.id)
                 .opacity(active ? 1.0 : 0.5)
 
             tableCards
@@ -128,9 +132,13 @@ struct SideOpponentView: View {
                 ZStack {
                     if i < player.faceDown.count {
                         OpponentCardView()
+                            .reportCardFrame(player.faceDown[i].uid)
+                            .hideIfInFlight(player.faceDown[i].uid)
                     }
                     if i < player.faceUp.count {
                         OpponentCardView(card: player.faceUp[i])
+                            .reportCardFrame(player.faceUp[i].uid)
+                            .hideIfInFlight(player.faceUp[i].uid)
                             .offset(x: 8 * gs)
                     }
                 }
@@ -147,6 +155,7 @@ struct SideOpponentView: View {
 struct OpponentHandFan: View {
     let cards: [Card]
     let avatarSize: CGFloat
+    let playerID: String
 
     @Environment(\.gameScale) private var gs
 
@@ -172,24 +181,28 @@ struct OpponentHandFan: View {
     }
 
     private var totalWidth: CGFloat {
-        guard !cards.isEmpty else { return 0 }
+        guard !cards.isEmpty else { return cardWidth }
         return cardWidth + advance * CGFloat(cards.count - 1)
     }
 
     var body: some View {
         ZStack {
-            ForEach(Array(cards.enumerated()), id: \.element.uid) { index, _ in
+            ForEach(Array(cards.enumerated()), id: \.element.uid) { index, card in
                 OpponentCardView()
+                    .reportCardFrame(card.uid)
+                    .hideIfInFlight(card.uid)
                     .offset(x: CGFloat(index) * advance - totalWidth / 2 + cardWidth / 2)
             }
         }
         .frame(width: max(totalWidth, cardWidth), height: cardHeight)
+        .reportHandCenter(playerID)
     }
 }
 
 struct SideOpponentHandFan: View {
     let cards: [Card]
     let avatarSize: CGFloat
+    let playerID: String
 
     @Environment(\.gameScale) private var gs
 
@@ -221,13 +234,16 @@ struct SideOpponentHandFan: View {
 
     var body: some View {
         ZStack {
-            ForEach(Array(cards.enumerated()), id: \.element.uid) { index, _ in
+            ForEach(Array(cards.enumerated()), id: \.element.uid) { index, card in
                 OpponentCardView()
+                    .reportCardFrame(card.uid)
+                    .hideIfInFlight(card.uid)
                     .rotationEffect(.degrees(90))
                     .offset(y: CGFloat(index) * advance - totalHeight / 2 + cardWidth / 2)
             }
         }
         .frame(width: cardHeight, height: max(totalHeight, cardWidth))
+        .reportHandCenter(playerID)
     }
 }
 

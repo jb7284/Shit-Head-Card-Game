@@ -372,6 +372,7 @@ struct PileLandingZone: View {
                 .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.10).opacity(0.35), radius: 12 * gs)
                 .shadow(color: Color(red: 0.90, green: 0.45, blue: 0.08).opacity(0.20), radius: 24 * gs)
                 .shadow(color: .black.opacity(0.22), radius: 10 * gs, y: 5 * gs)
+                .reportPileFrame()
 
             ForEach(0..<min(pileCount, 3), id: \.self) { index in
                 RoundedRectangle(cornerRadius: 7 * gs)
@@ -383,11 +384,9 @@ struct PileLandingZone: View {
 
             if let topCard {
                 CardView(card: topCard, faceUp: true)
+                    .hideIfInFlight(topCard.uid)
                     .rotationEffect(.degrees(Double((pileCount % 5) - 2) * 2.5))
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.5).combined(with: .opacity),
-                        removal: .scale(scale: 1.2).combined(with: .opacity)
-                    ))
+                    .transition(.opacity)
             }
         }
     }
