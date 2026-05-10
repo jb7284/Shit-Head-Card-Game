@@ -6,27 +6,41 @@ struct CenterTableView: View {
     let showDropTarget: Bool
     let burnEffect: Bool
     let wildEffect: Bool
+    let canPickUpPile: Bool
     let mustPickUpPile: Bool
     let onPickUpPile: () -> Void
 
     @Environment(\.gameScale) private var gs
 
+    private let pickUpButtonWidth: CGFloat = 110
+    private let pickUpButtonHeight: CGFloat = 36
+    private let pickUpButtonGap: CGFloat = 12
+
     var body: some View {
-        VStack(spacing: 4 * gs) {
-            pileArea
-            actionButtons
-        }
+        pileArea
     }
 
     private var pileArea: some View {
         ZStack {
-            VStack(spacing: 2) {
-                PileLandingZone(topCard: topCard, pileCount: pileCount)
-                    .overlay(dropTargetOverlay)
+            HStack(spacing: pickUpButtonGap * gs) {
+                Color.clear
+                    .frame(width: pickUpButtonWidth * gs, height: pickUpButtonHeight * gs)
 
-                Text("Pile: \(pileCount)")
-                    .font(.system(size: 10 * gs))
-                    .foregroundStyle(.white.opacity(0.4))
+                VStack(spacing: 2) {
+                    PileLandingZone(topCard: topCard, pileCount: pileCount)
+                        .overlay(dropTargetOverlay)
+
+                    Text("Pile: \(pileCount)")
+                        .font(.system(size: 10 * gs))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+
+                pickUpButton
+                    .frame(width: pickUpButtonWidth * gs, height: pickUpButtonHeight * gs)
+                    .opacity(canPickUpPile ? 1 : 0)
+                    .allowsHitTesting(canPickUpPile)
+                    .animation(.easeInOut(duration: 0.2), value: canPickUpPile)
+                    .animation(.easeInOut(duration: 0.2), value: mustPickUpPile)
             }
 
             if burnEffect {
@@ -50,24 +64,31 @@ struct CenterTableView: View {
             .animation(.easeInOut(duration: 0.2), value: showDropTarget)
     }
 
-    @ViewBuilder
-    private var actionButtons: some View {
-        HStack(spacing: 12) {
-            if mustPickUpPile {
-                Button(action: onPickUpPile) {
-                    Text("Pick Up Pile")
-                        .font(.system(size: 12 * gs, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 14 * gs)
-                        .padding(.vertical, 8 * gs)
-                        .background(
-                            Capsule()
-                                .fill(Color.red.opacity(0.7))
-                                .shadow(color: .red.opacity(0.3), radius: 4, y: 2)
+    private var pickUpButton: some View {
+        Button(action: onPickUpPile) {
+            Text(mustPickUpPile ? "Pick Up" : "Voluntary Pick Up")
+                .font(.system(size: 11 * gs, weight: .bold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8 * gs)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    Capsule()
+                        .fill(mustPickUpPile ? Color.red.opacity(0.75) : GameTheme.primaryButtonFill)
+                        .shadow(
+                            color: mustPickUpPile ? Color.red.opacity(0.35) : GameTheme.selectedShadow,
+                            radius: 4 * gs,
+                            y: 2 * gs
                         )
-                }
-            }
+                )
+                .overlay(
+                    Capsule()
+                        .strokeBorder(Color.white.opacity(0.25), lineWidth: 1 * gs)
+                )
         }
+        .buttonStyle(.plain)
     }
 }
 
