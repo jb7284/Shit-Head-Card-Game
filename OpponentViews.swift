@@ -27,6 +27,7 @@ struct TopOpponentView: View {
     let active: Bool
     let isNext: Bool
     let turnPulse: Bool
+    let skippedPlayerID: String?
 
     @Environment(\.gameScale) private var gs
 
@@ -65,6 +66,15 @@ struct TopOpponentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: active)
+        .overlay {
+            if skippedPlayerID == player.id {
+                SkippedBadge()
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.5).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+            }
+        }
     }
 
     private var opponentIdentity: some View {
@@ -92,6 +102,7 @@ struct SideOpponentView: View {
     let active: Bool
     let isNext: Bool
     let turnPulse: Bool
+    let skippedPlayerID: String?
 
     @Environment(\.gameScale) private var gs
 
@@ -106,6 +117,15 @@ struct SideOpponentView: View {
                 .opacity(active ? 1.0 : 0.5)
         }
         .animation(.easeInOut(duration: 0.3), value: active)
+        .overlay {
+            if skippedPlayerID == player.id {
+                SkippedBadge()
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.5).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+            }
+        }
     }
 
     private var opponentIdentity: some View {
@@ -434,5 +454,18 @@ struct DrawPileStack: View {
                 .foregroundStyle(Color(red: 0.95, green: 0.85, blue: 0.55))
                 .shadow(color: .black.opacity(0.6), radius: 2, y: 1)
         }
+    }
+}
+
+struct SkippedBadge: View {
+    @Environment(\.gameScale) private var gs
+
+    var body: some View {
+        Text("SKIPPED!")
+            .font(.system(size: 16 * gs, weight: .black))
+            .foregroundStyle(.red)
+            .shadow(color: .black.opacity(0.8), radius: 4, y: 2)
+            .shadow(color: .red.opacity(0.4), radius: 8)
+            .allowsHitTesting(false)
     }
 }

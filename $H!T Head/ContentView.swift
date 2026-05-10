@@ -70,9 +70,13 @@ struct ContentView: View {
             }
         }
         .onChange(of: engine.eventSerial) { _, _ in
+            if engine.lastEvent == .skip, let skippedID = engine.skippedPlayerID {
+                effects.showSkipped(playerID: skippedID)
+            }
             effects.handle(engine.lastEvent,
                            playFlightDuration: flights.playFlightDuration,
-                           isCurrentPlayerAI: engine.state.currentPlayer.isAI)
+                           isCurrentPlayerAI: engine.state.currentPlayer.isAI,
+                           playDirection: engine.state.playDirection)
         }
         .onChange(of: engine.state.currentPlayerIndex) { _, _ in
             effects.restartTurnPulse()
@@ -144,7 +148,10 @@ struct ContentView: View {
                 dragOffset: $dragOffset,
                 burnEffect: effects.burnEffect,
                 wildEffect: effects.wildEffect,
+                reverseEffect: effects.reverseEffect,
+                reverseDirection: effects.reverseDirection,
                 turnPulse: effects.turnPulse,
+                skippedPlayerID: effects.skippedPlayerID,
                 revealedFaceDownIndex: effects.revealedFaceDownIndex,
                 pendingBurnPile: effects.pendingBurnPile,
                 onPickUpPile: pickUpPile,
@@ -377,7 +384,7 @@ struct ContentView: View {
 
         let humanOut = !(humanPlayer?.hasCards ?? false)
         let burnPending = !effects.pendingBurnPile.isEmpty
-        let delayMs = burnPending ? 1800 : (humanOut ? 300 : 800)
+        let delayMs = burnPending ? 1800 : (humanOut ? 75 : 1200)
 
         aiTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(delayMs))
@@ -394,6 +401,7 @@ struct ContentView: View {
             let post = flights.snapshot(from: engine)
             flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
             effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
+            triggerAI()
         }
     }
 }

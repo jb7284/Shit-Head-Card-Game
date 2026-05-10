@@ -8,7 +8,10 @@ struct GameTableView: View {
 
     let burnEffect: Bool
     let wildEffect: Bool
+    let reverseEffect: Bool
+    let reverseDirection: Int
     let turnPulse: Bool
+    let skippedPlayerID: String?
     let revealedFaceDownIndex: Int?
     let pendingBurnPile: [Card]
     let onPickUpPile: () -> Void
@@ -35,7 +38,8 @@ struct GameTableView: View {
                     player: opponentLayout.left,
                     active: isCurrentPlayer(opponentLayout.left),
                     isNext: isNextPlayer(opponentLayout.left),
-                    turnPulse: turnPulse
+                    turnPulse: turnPulse,
+                    skippedPlayerID: skippedPlayerID
                 )
 
                 Spacer(minLength: 0)
@@ -52,6 +56,8 @@ struct GameTableView: View {
                         showDropTarget: dragCardID != nil,
                         burnEffect: burnEffect,
                         wildEffect: wildEffect,
+                        reverseEffect: reverseEffect,
+                        reverseDirection: reverseDirection,
                         canPickUpPile: canPickUpPile,
                         mustPickUpPile: mustPickUpPile,
                         onPickUpPile: onPickUpPile
@@ -65,7 +71,8 @@ struct GameTableView: View {
                     player: opponentLayout.right,
                     active: isCurrentPlayer(opponentLayout.right),
                     isNext: isNextPlayer(opponentLayout.right),
-                    turnPulse: turnPulse
+                    turnPulse: turnPulse,
+                    skippedPlayerID: skippedPlayerID
                 )
                 .padding(.trailing, 20)
             }
@@ -78,6 +85,7 @@ struct GameTableView: View {
                     openingCard: engine.openingCard,
                     turnPulse: turnPulse,
                     showHints: showHints,
+                    skippedPlayerID: skippedPlayerID,
                     revealedFaceDownIndex: revealedFaceDownIndex,
                     selectedCards: $selectedCards,
                     dragCardID: $dragCardID,
@@ -102,7 +110,8 @@ struct GameTableView: View {
             player: player,
             active: isCurrentPlayer(player),
             isNext: isNextPlayer(player),
-            turnPulse: turnPulse
+            turnPulse: turnPulse,
+            skippedPlayerID: skippedPlayerID
         )
         .transition(.scale.combined(with: .opacity))
         .padding(.horizontal, 12)

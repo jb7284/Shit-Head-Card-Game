@@ -7,6 +7,8 @@ struct CenterTableView: View {
     let showDropTarget: Bool
     let burnEffect: Bool
     let wildEffect: Bool
+    let reverseEffect: Bool
+    let reverseDirection: Int
     let canPickUpPile: Bool
     let mustPickUpPile: Bool
     let onPickUpPile: () -> Void
@@ -42,6 +44,24 @@ struct CenterTableView: View {
                     .allowsHitTesting(canPickUpPile && !mustPickUpPile)
                     .animation(.easeInOut(duration: 0.2), value: canPickUpPile)
                     .animation(.easeInOut(duration: 0.2), value: mustPickUpPile)
+            }
+
+            if reverseEffect {
+                VStack(spacing: 2 * gs) {
+                    Image(systemName: reverseDirection == -1
+                          ? "arrow.counterclockwise"
+                          : "arrow.clockwise")
+                        .font(.system(size: 22 * gs, weight: .bold))
+                    Text("REVERSE")
+                        .font(.system(size: 11 * gs, weight: .black))
+                }
+                .foregroundStyle(Color(red: 0.85, green: 0.70, blue: 0.35))
+                .shadow(color: .black.opacity(0.7), radius: 4, y: 2)
+                .allowsHitTesting(false)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.5).combined(with: .opacity),
+                    removal: .opacity
+                ))
             }
 
             if burnEffect {

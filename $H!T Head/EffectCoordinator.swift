@@ -15,6 +15,12 @@ class EffectCoordinator {
 
     var revealedFaceDownIndex: Int? = nil
 
+    var skippedPlayerID: String? = nil
+    private var skippedTask: Task<Void, Never>?
+
+    var reverseEffect = false
+    var reverseDirection: Int = 1
+
     var rejectionShakeID: UUID? = nil
     var rejectionShakeTrigger: CGFloat = 0
     var rejectionMessage: String? = nil
@@ -23,7 +29,13 @@ class EffectCoordinator {
     private let rejectionShakeDuration: TimeInterval = 0.45
     private let rejectionMessageDuration: TimeInterval = 1.5
 
-    func handle(_ event: GameEvent, playFlightDuration: TimeInterval, isCurrentPlayerAI: Bool) {
+    func handle(_ event: GameEvent, playFlightDuration: TimeInterval, isCurrentPlayerAI: Bool, playDirection: Int) {
+        if event != .none && event != .reverse {
+            withAnimation(.easeIn(duration: 0.3)) {
+                reverseEffect = false
+            }
+        }
+
         switch event {
         case .burn:
             let burnDelay = playFlightDuration + 0.5
@@ -38,6 +50,10 @@ class EffectCoordinator {
         case .skip:
             SoundManager.play(.skipped)
         case .reverse:
+            reverseDirection = playDirection
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                reverseEffect = true
+            }
             SoundManager.play(.reverse)
         case .none, .normal, .sevenPlayed:
             break
@@ -97,6 +113,20 @@ class EffectCoordinator {
             guard !Task.isCancelled else { return }
             withAnimation(.easeIn(duration: 0.3)) {
                 self?.rejectionMessage = nil
+            }
+        }
+    }
+
+    func showSkipped(playerID: String) {
+        skippedTask?.cancel()
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            skippedPlayerID = playerID
+        }
+        skippedTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeIn(duration: 0.4)) {
+                self?.skippedPlayerID = nil
             }
         }
     }

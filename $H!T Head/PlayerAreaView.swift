@@ -7,6 +7,7 @@ struct PlayerAreaView: View {
     let openingCard: Card?
     let turnPulse: Bool
     let showHints: Bool
+    let skippedPlayerID: String?
     let revealedFaceDownIndex: Int?
 
     @Binding var selectedCards: [Card]
@@ -61,6 +62,15 @@ struct PlayerAreaView: View {
         }
         .padding(.vertical, 2)
         .padding(.horizontal, 4)
+        .overlay {
+            if skippedPlayerID == human.id {
+                SkippedBadge()
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.5).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+            }
+        }
         .onChange(of: revealedFaceDownIndex) { _, newValue in
             if newValue != nil {
                 withAnimation(.easeInOut(duration: 0.35)) {

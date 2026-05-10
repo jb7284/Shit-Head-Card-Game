@@ -10,6 +10,7 @@ class GameEngine {
     var eventSerial: Int = 0
     var difficulty: Difficulty = .medium
     var openingCard: Card? = nil
+    var skippedPlayerID: String? = nil
 
     // MARK: - Setup
 
@@ -19,6 +20,7 @@ class GameEngine {
         lastEvent = .none
         mustPlayUnderSeven = false
         openingCard = nil
+        skippedPlayerID = nil
         state = GameDealer.newGameState(playerCount: playerCount)
         message = "Swap cards between your hand and face-up cards"
     }
@@ -254,6 +256,9 @@ class GameEngine {
             publishEvent(.wild)
             message = "\(state.players[playerIndex].name) played \(card.display) — wild!"
         } else if card.isSkip {
+            let count = state.players.count
+            let skippedIndex = ((playerIndex + state.playDirection) % count + count) % count
+            skippedPlayerID = state.players[skippedIndex].hasCards ? state.players[skippedIndex].id : nil
             publishEvent(.skip)
             message = "\(state.players[playerIndex].name) played \(card.display) — skip!"
             advanceTurn(skip: true)
@@ -284,6 +289,12 @@ class GameEngine {
         mustPlayUnderSeven = false
 
         if checkWin(playerIndex: playerIndex) { return }
+
+        if !state.players[playerIndex].hasCards {
+            state.currentPlayerIndex = playerIndex
+            advanceTurn()
+            return
+        }
 
         state.currentPlayerIndex = playerIndex
         state.turnNumber += 1
