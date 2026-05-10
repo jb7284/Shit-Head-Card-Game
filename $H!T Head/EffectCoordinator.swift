@@ -20,6 +20,7 @@ class EffectCoordinator {
 
     var reverseEffect = false
     var reverseDirection: Int = 1
+    var fourOfAKindEffect = false
 
     var rejectionShakeID: UUID? = nil
     var rejectionShakeTrigger: CGFloat = 0
@@ -29,7 +30,7 @@ class EffectCoordinator {
     private let rejectionShakeDuration: TimeInterval = 0.45
     private let rejectionMessageDuration: TimeInterval = 1.5
 
-    func handle(_ event: GameEvent, playFlightDuration: TimeInterval, isCurrentPlayerAI: Bool, playDirection: Int) {
+    func handle(_ event: GameEvent, playFlightDuration: TimeInterval, isCurrentPlayerAI: Bool, playDirection: Int, isFourOfAKindBurn: Bool = false) {
         if event != .none && event != .reverse {
             withAnimation(.easeIn(duration: 0.3)) {
                 reverseEffect = false
@@ -38,10 +39,14 @@ class EffectCoordinator {
 
         switch event {
         case .burn:
+            let wasFourOfAKind = isFourOfAKindBurn
             let burnDelay = playFlightDuration + 0.5
             DispatchQueue.main.asyncAfter(deadline: .now() + burnDelay) { [weak self] in
                 self?.triggerBurnEffect()
                 SoundManager.play(.burn)
+                if wasFourOfAKind {
+                    self?.triggerFourOfAKindEffect()
+                }
             }
         case .wild:
             triggerWildEffect()
@@ -200,6 +205,17 @@ class EffectCoordinator {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             self?.burnedCards.removeAll()
             self?.burnFlyProgress = 0
+        }
+    }
+
+    private func triggerFourOfAKindEffect() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            fourOfAKindEffect = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { [weak self] in
+            withAnimation(.easeIn(duration: 0.4)) {
+                self?.fourOfAKindEffect = false
+            }
         }
     }
 

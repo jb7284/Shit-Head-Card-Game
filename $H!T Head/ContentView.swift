@@ -76,7 +76,8 @@ struct ContentView: View {
             effects.handle(engine.lastEvent,
                            playFlightDuration: flights.playFlightDuration,
                            isCurrentPlayerAI: engine.state.currentPlayer.isAI,
-                           playDirection: engine.state.playDirection)
+                           playDirection: engine.state.playDirection,
+                           isFourOfAKindBurn: engine.lastBurnWasFourOfAKind)
         }
         .onChange(of: engine.state.currentPlayerIndex) { _, _ in
             effects.restartTurnPulse()
@@ -148,6 +149,7 @@ struct ContentView: View {
                 dragOffset: $dragOffset,
                 burnEffect: effects.burnEffect,
                 wildEffect: effects.wildEffect,
+                fourOfAKindEffect: effects.fourOfAKindEffect,
                 reverseEffect: effects.reverseEffect,
                 reverseDirection: effects.reverseDirection,
                 turnPulse: effects.turnPulse,

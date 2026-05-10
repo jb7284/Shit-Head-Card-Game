@@ -463,9 +463,9 @@ struct SkippedBadge: View {
     var body: some View {
         Text("SKIPPED!")
             .font(.system(size: 16 * gs, weight: .black))
-            .foregroundStyle(.red)
+            .foregroundStyle(.green)
             .shadow(color: .black.opacity(0.8), radius: 4, y: 2)
-            .shadow(color: .red.opacity(0.4), radius: 8)
+            .shadow(color: .green.opacity(0.4), radius: 8)
             .allowsHitTesting(false)
     }
 }

@@ -7,6 +7,7 @@ struct CenterTableView: View {
     let showDropTarget: Bool
     let burnEffect: Bool
     let wildEffect: Bool
+    let fourOfAKindEffect: Bool
     let reverseEffect: Bool
     let reverseDirection: Int
     let canPickUpPile: Bool
@@ -18,6 +19,15 @@ struct CenterTableView: View {
     private let pickUpButtonWidth: CGFloat = 110
     private let pickUpButtonHeight: CGFloat = 36
     private let pickUpButtonGap: CGFloat = 12
+
+    private var topMatchCount: Int? {
+        guard let topRank = recentPile.last?.rank else { return nil }
+        var count = 0
+        for card in recentPile.reversed() {
+            if card.rank == topRank { count += 1 } else { break }
+        }
+        return count
+    }
 
     var body: some View {
         pileArea
@@ -32,6 +42,16 @@ struct CenterTableView: View {
                 VStack(spacing: 2) {
                     PileLandingZone(recentPile: recentPile, pileCount: pileCount)
                         .overlay(dropTargetOverlay)
+                        .overlay(alignment: .bottomTrailing) {
+                            if let count = topMatchCount, count >= 2 && count <= 3 {
+                                Text("x\(count)")
+                                    .font(.system(size: 13 * gs, weight: .black, design: .rounded))
+                                    .foregroundStyle(Color(red: 0.85, green: 0.70, blue: 0.35))
+                                    .shadow(color: .black.opacity(0.8), radius: 3, y: 1)
+                                    .padding(4 * gs)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                        }
 
                     Text("Pile: \(pileCount)")
                         .font(.system(size: 10 * gs))
@@ -55,7 +75,7 @@ struct CenterTableView: View {
                     Text("REVERSE")
                         .font(.system(size: 11 * gs, weight: .black))
                 }
-                .foregroundStyle(Color(red: 0.85, green: 0.70, blue: 0.35))
+                .foregroundStyle(.green)
                 .shadow(color: .black.opacity(0.7), radius: 4, y: 2)
                 .allowsHitTesting(false)
                 .transition(.asymmetric(
@@ -73,6 +93,19 @@ struct CenterTableView: View {
                     .fill(Color.white.opacity(0.3))
                     .frame(width: 100 * gs, height: 100 * gs)
                     .transition(.opacity)
+            }
+
+            if fourOfAKindEffect {
+                Text("4 In A Row!")
+                    .font(.system(size: 18 * gs, weight: .black))
+                    .foregroundStyle(.green)
+                    .shadow(color: .black.opacity(0.8), radius: 4, y: 2)
+                    .shadow(color: .green.opacity(0.4), radius: 8)
+                    .allowsHitTesting(false)
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.5).combined(with: .opacity),
+                        removal: .opacity
+                    ))
             }
         }
     }

@@ -8,6 +8,7 @@ struct GameTableView: View {
 
     let burnEffect: Bool
     let wildEffect: Bool
+    let fourOfAKindEffect: Bool
     let reverseEffect: Bool
     let reverseDirection: Int
     let turnPulse: Bool
@@ -56,6 +57,7 @@ struct GameTableView: View {
                         showDropTarget: dragCardID != nil,
                         burnEffect: burnEffect,
                         wildEffect: wildEffect,
+                        fourOfAKindEffect: fourOfAKindEffect,
                         reverseEffect: reverseEffect,
                         reverseDirection: reverseDirection,
                         canPickUpPile: canPickUpPile,

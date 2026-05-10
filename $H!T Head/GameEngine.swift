@@ -11,6 +11,7 @@ class GameEngine {
     var difficulty: Difficulty = .medium
     var openingCard: Card? = nil
     var skippedPlayerID: String? = nil
+    var lastBurnWasFourOfAKind = false
 
     // MARK: - Setup
 
@@ -21,6 +22,7 @@ class GameEngine {
         mustPlayUnderSeven = false
         openingCard = nil
         skippedPlayerID = nil
+        lastBurnWasFourOfAKind = false
         state = GameDealer.newGameState(playerCount: playerCount)
         message = "Swap cards between your hand and face-up cards"
     }
@@ -232,6 +234,7 @@ class GameEngine {
 
     private func afterPlay(card: Card, playerIndex: Int) {
         openingCard = nil
+        lastBurnWasFourOfAKind = false
 
         if checkForBurn(card: card, playerIndex: playerIndex) {
             return
@@ -276,6 +279,7 @@ class GameEngine {
 
     private func checkForBurn(card: Card, playerIndex: Int) -> Bool {
         if GameRules.isFourOfAKindBurn(pile: state.pile, triggerCard: card) {
+            lastBurnWasFourOfAKind = true
             message = "Four \(card.rank.label)s — pile burned!"
             burnPile(playerIndex: playerIndex)
             return true
