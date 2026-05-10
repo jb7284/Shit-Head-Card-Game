@@ -32,12 +32,14 @@ enum GameSound {
     case burn
     case pickup
     case skipped
+    case reverse
 
     func generate(format: AVAudioFormat) -> AVAudioPCMBuffer {
         switch self {
         case .burn: return Self.makeBurn(format: format)
         case .pickup: return Self.makePickup(format: format)
         case .skipped: return Self.makeSkipped(format: format)
+        case .reverse: return Self.makeReverse(format: format)
         }
     }
 
@@ -93,6 +95,31 @@ enum GameSound {
             let envelope = exp(-progress * 6.0) * min(t / 0.005, 1.0)
 
             samples[i] = Float((tone1 + tone2 + click) * envelope * 0.8)
+        }
+        return buffer
+    }
+
+    // Wobbling sweep — "direction change" feel
+    private static func makeReverse(format: AVAudioFormat) -> AVAudioPCMBuffer {
+        let sampleRate = format.sampleRate
+        let duration = 0.3
+        let frameCount = AVAudioFrameCount(sampleRate * duration)
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        buffer.frameLength = frameCount
+        let samples = buffer.floatChannelData![0]
+
+        for i in 0..<Int(frameCount) {
+            let t = Double(i) / sampleRate
+            let progress = t / duration
+
+            let wobble = sin(2.0 * .pi * 6.0 * t) * 200.0
+            let freq = 800.0 + wobble
+            let tone = sin(2.0 * .pi * freq * t) * 0.35
+            let harmonic = sin(2.0 * .pi * freq * 1.5 * t) * 0.12
+
+            let envelope = min(t / 0.008, 1.0) * pow(1.0 - progress, 1.8)
+
+            samples[i] = Float((tone + harmonic) * envelope * 0.7)
         }
         return buffer
     }

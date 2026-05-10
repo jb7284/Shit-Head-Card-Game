@@ -256,6 +256,7 @@ struct ContentView: View {
         }
         let post = flights.snapshot(from: engine)
         flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
+        effects.triggerHaptic(.levelChange)
         triggerAI()
     }
 
@@ -276,6 +277,9 @@ struct ContentView: View {
             let post = flights.snapshot(from: engine)
             flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
             effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
+            if engine.lastEvent == .failedFlip {
+                effects.triggerHaptic(.levelChange)
+            }
             triggerAI()
         }
     }
@@ -290,6 +294,7 @@ struct ContentView: View {
         let post = flights.snapshot(from: engine)
         flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
         effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
+        effects.scheduleDrawHaptic(pre: pre, post: post)
         triggerAI()
     }
 

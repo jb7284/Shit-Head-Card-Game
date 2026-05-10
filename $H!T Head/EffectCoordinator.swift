@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 @MainActor
 @Observable
@@ -35,10 +36,10 @@ class EffectCoordinator {
         case .pickup, .failedFlip:
             SoundManager.play(.pickup)
         case .skip:
-            if !isCurrentPlayerAI {
-                SoundManager.play(.skipped)
-            }
-        case .none, .normal, .sevenPlayed, .reverse:
+            SoundManager.play(.skipped)
+        case .reverse:
+            SoundManager.play(.reverse)
+        case .none, .normal, .sevenPlayed:
             break
         }
     }
@@ -104,6 +105,32 @@ class EffectCoordinator {
         turnPulse = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.turnPulse = true
+        }
+    }
+
+    func triggerHaptic(_ pattern: NSHapticFeedbackManager.FeedbackPattern) {
+        NSHapticFeedbackManager.defaultPerformer.perform(pattern, performanceTime: .default)
+    }
+
+    func scheduleDrawHaptic(
+        pre: FlightOrchestrator.StateSnapshot,
+        post: FlightOrchestrator.StateSnapshot
+    ) {
+        guard let humanIdx = post.players.firstIndex(where: { !$0.isAI }),
+              humanIdx < pre.players.count else { return }
+
+        let prePlayer = pre.players[humanIdx]
+        let postPlayer = post.players[humanIdx]
+        let preHandSet = Set(prePlayer.hand.map { $0.uid })
+        let preDrawSet = Set(prePlayer.drawPile.map { $0.uid })
+        let drew = postPlayer.hand.contains {
+            !preHandSet.contains($0.uid) && preDrawSet.contains($0.uid)
+        }
+
+        guard drew else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
         }
     }
 
