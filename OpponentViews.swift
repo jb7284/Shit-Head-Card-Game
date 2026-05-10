@@ -32,22 +32,7 @@ struct TopOpponentView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8 * gs) {
-            VStack(spacing: 2 * gs) {
-                AvatarView(avatar: player.avatar, size: 80 * gs)
-                Text(player.name)
-                    .font(.system(size: 12 * gs, weight: .bold))
-                    .foregroundStyle(.white.opacity(active ? 0.9 : 0.5))
-                if !player.hasCards {
-                    Text("OUT")
-                        .font(.system(size: 8 * gs, weight: .heavy))
-                        .foregroundStyle(.green)
-                }
-                if isNext && player.hasCards {
-                    Text("Next")
-                        .font(.system(size: 8 * gs, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.3))
-                }
-            }
+            opponentIdentity
 
             VStack(alignment: .leading, spacing: 4 * gs) {
                 OpponentHandFan(cards: player.hand, avatarSize: 80 * gs)
@@ -76,6 +61,25 @@ struct TopOpponentView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: active)
     }
+
+    private var opponentIdentity: some View {
+        VStack(spacing: 2 * gs) {
+            AvatarView(avatar: player.avatar, size: 80 * gs)
+            Text(player.name)
+                .font(.system(size: 12 * gs, weight: .bold))
+                .foregroundStyle(.white.opacity(active ? 0.9 : 0.5))
+            if !player.hasCards {
+                Text("OUT")
+                    .font(.system(size: 8 * gs, weight: .heavy))
+                    .foregroundStyle(.green)
+            }
+            if isNext && player.hasCards {
+                Text("Next")
+                    .font(.system(size: 8 * gs, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.3))
+            }
+        }
+    }
 }
 
 struct SideOpponentView: View {
@@ -87,50 +91,56 @@ struct SideOpponentView: View {
     @Environment(\.gameScale) private var gs
 
     var body: some View {
-        HStack(alignment: .top, spacing: 6 * gs) {
-            VStack(spacing: 2 * gs) {
-                AvatarView(avatar: player.avatar, size: 84 * gs)
-                Text(player.name)
-                    .font(.system(size: 12 * gs, weight: .bold))
-                    .foregroundStyle(.white.opacity(active ? 0.9 : 0.5))
-                if !player.hasCards {
-                    Text("OUT")
-                        .font(.system(size: 8 * gs, weight: .heavy))
-                        .foregroundStyle(.green)
-                }
-                if isNext && player.hasCards {
-                    Text("Next")
-                        .font(.system(size: 8 * gs, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.3))
-                }
-            }
+        HStack(alignment: .center, spacing: 8 * gs) {
+            opponentIdentity
 
-            VStack(spacing: 4 * gs) {
-                OpponentHandFan(cards: player.hand, avatarSize: 84 * gs)
-                    .opacity(active ? 1.0 : 0.5)
-
-                VStack(spacing: 3 * gs) {
-                    ForEach(0..<3, id: \.self) { i in
-                        ZStack {
-                            if i < player.faceDown.count {
-                                OpponentCardView()
-                            }
-                            if i < player.faceUp.count {
-                                OpponentCardView(card: player.faceUp[i])
-                                    .offset(x: 8 * gs)
-                            }
-                        }
-                    }
-
-                    if player.drawPile.count > 0 {
-                        DrawPileStack(count: player.drawPile.count, mini: true)
-                            .padding(.top, 4 * gs)
-                    }
-                }
+            SideOpponentHandFan(cards: player.hand, avatarSize: 84 * gs)
                 .opacity(active ? 1.0 : 0.5)
-            }
+
+            tableCards
+                .opacity(active ? 1.0 : 0.5)
         }
         .animation(.easeInOut(duration: 0.3), value: active)
+    }
+
+    private var opponentIdentity: some View {
+        VStack(spacing: 2 * gs) {
+            AvatarView(avatar: player.avatar, size: 84 * gs)
+            Text(player.name)
+                .font(.system(size: 12 * gs, weight: .bold))
+                .foregroundStyle(.white.opacity(active ? 0.9 : 0.5))
+            if !player.hasCards {
+                Text("OUT")
+                    .font(.system(size: 8 * gs, weight: .heavy))
+                    .foregroundStyle(.green)
+            }
+            if isNext && player.hasCards {
+                Text("Next")
+                    .font(.system(size: 8 * gs, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.3))
+            }
+        }
+    }
+
+    private var tableCards: some View {
+        VStack(spacing: 3 * gs) {
+            ForEach(0..<3, id: \.self) { i in
+                ZStack {
+                    if i < player.faceDown.count {
+                        OpponentCardView()
+                    }
+                    if i < player.faceUp.count {
+                        OpponentCardView(card: player.faceUp[i])
+                            .offset(x: 8 * gs)
+                    }
+                }
+            }
+
+            if player.drawPile.count > 0 {
+                DrawPileStack(count: player.drawPile.count, mini: true)
+                    .padding(.top, 4 * gs)
+            }
+        }
     }
 }
 
@@ -173,7 +183,51 @@ struct OpponentHandFan: View {
                     .offset(x: CGFloat(index) * advance - totalWidth / 2 + cardWidth / 2)
             }
         }
-        .frame(width: totalWidth, height: cardHeight)
+        .frame(width: max(totalWidth, cardWidth), height: cardHeight)
+    }
+}
+
+struct SideOpponentHandFan: View {
+    let cards: [Card]
+    let avatarSize: CGFloat
+
+    @Environment(\.gameScale) private var gs
+
+    private var cardWidth: CGFloat { 30 * gs }
+    private var cardHeight: CGFloat { 40 * gs }
+
+    private var baseOverlap: CGFloat {
+        let n = cards.count
+        if n <= 6 { return 0.40 }
+        if n >= 15 { return 0.70 }
+        let t = CGFloat(n - 6) / 9
+        return 0.40 + (0.70 - 0.40) * t
+    }
+
+    private var heightCap: CGFloat { avatarSize * 1.9 }
+
+    private var advance: CGFloat {
+        guard cards.count > 1 else { return 0 }
+        let baseAdvance = cardWidth * (1 - baseOverlap)
+        let baseTotal = cardWidth + baseAdvance * CGFloat(cards.count - 1)
+        if baseTotal <= heightCap { return baseAdvance }
+        return max(0, (heightCap - cardWidth) / CGFloat(cards.count - 1))
+    }
+
+    private var totalHeight: CGFloat {
+        guard !cards.isEmpty else { return cardWidth }
+        return cardWidth + advance * CGFloat(cards.count - 1)
+    }
+
+    var body: some View {
+        ZStack {
+            ForEach(Array(cards.enumerated()), id: \.element.uid) { index, _ in
+                OpponentCardView()
+                    .rotationEffect(.degrees(90))
+                    .offset(y: CGFloat(index) * advance - totalHeight / 2 + cardWidth / 2)
+            }
+        }
+        .frame(width: cardHeight, height: max(totalHeight, cardWidth))
     }
 }
 
@@ -338,58 +392,6 @@ struct CharacterAvatar: View {
                 .fill(Color(red: 0.1, green: 0.07, blue: 0.18))
                 .frame(width: size * 0.95, height: size * 0.7)
                 .offset(y: -size * 0.18)
-        }
-    }
-}
-
-#Preview("Opponent Layout") {
-    let mockCards: [Card] = [
-        Card(suit: .hearts, rank: .jack),
-        Card(suit: .spades, rank: .two),
-        Card(suit: .hearts, rank: .queen)
-    ]
-    let mockDown: [Card] = [
-        Card(suit: .clubs, rank: .three),
-        Card(suit: .diamonds, rank: .five),
-        Card(suit: .spades, rank: .nine)
-    ]
-    let mockDraw: [Card] = Array(repeating: Card(suit: .clubs, rank: .ace), count: 8)
-    let mockHand: [Card] = [
-        Card(suit: .diamonds, rank: .king),
-        Card(suit: .clubs, rank: .seven),
-        Card(suit: .hearts, rank: .four)
-    ]
-
-    func mockPlayer(_ name: String, _ avatar: String, id: String) -> Player {
-        var p = Player(id: id, name: name, avatar: avatar, isAI: true)
-        p.faceUp = mockCards
-        p.faceDown = mockDown
-        p.drawPile = mockDraw
-        p.hand = mockHand
-        return p
-    }
-
-    let marco = mockPlayer("Marco", "avatar_marco", id: "ai0")
-    let sofia = mockPlayer("Sofia", "avatar_sofia", id: "ai1")
-    let dante = mockPlayer("Dante", "avatar_dante", id: "ai2")
-    let ava = mockPlayer("Ava", "avatar_ava", id: "ai3")
-    let jake = mockPlayer("Jake", "avatar_jake", id: "ai4")
-
-    return ZStack {
-        Color(red: 0.06, green: 0.06, blue: 0.08).ignoresSafeArea()
-        VStack(spacing: 20) {
-            Text("Top Opponents").font(.caption).foregroundStyle(.white.opacity(0.5))
-            HStack(spacing: 12) {
-                TopOpponentView(player: marco, active: true, isNext: false, turnPulse: true)
-                TopOpponentView(player: sofia, active: false, isNext: true, turnPulse: false)
-                TopOpponentView(player: dante, active: false, isNext: false, turnPulse: false)
-            }
-
-            Text("Side Opponents").font(.caption).foregroundStyle(.white.opacity(0.5))
-            HStack(spacing: 20) {
-                SideOpponentView(player: ava, active: true, isNext: false, turnPulse: true)
-                SideOpponentView(player: jake, active: false, isNext: true, turnPulse: false)
-            }
         }
     }
 }
