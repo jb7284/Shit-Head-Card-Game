@@ -25,6 +25,7 @@ enum Suit: String, CaseIterable, Codable {
 }
 
 enum Rank: Int, CaseIterable, Codable, Comparable {
+    case joker = 1
     case two = 2, three, four, five, six, seven, eight, nine, ten
     case jack, queen, king, ace
 
@@ -34,6 +35,7 @@ enum Rank: Int, CaseIterable, Codable, Comparable {
 
     var label: String {
         switch self {
+        case .joker: return "JKR"
         case .two: return "2"
         case .three: return "3"
         case .four: return "4"
@@ -74,6 +76,7 @@ struct Card: Identifiable, Equatable, Codable {
     var isSeven: Bool { rank == .seven }
     var isSkip: Bool { rank == .eight }
     var isReverse: Bool { rank == .nine }
+    var isJoker: Bool { rank == .joker }
 }
 
 // MARK: - Deck
@@ -85,9 +88,12 @@ struct Deck {
         var cards: [Card] = []
         for _ in 0..<deckCount {
             for suit in Suit.allCases {
-                for rank in Rank.allCases {
+                for rank in Rank.allCases where rank != .joker {
                     cards.append(Card(suit: suit, rank: rank))
                 }
+            }
+            for suit in Suit.allCases {
+                cards.append(Card(suit: suit, rank: .joker))
             }
         }
         return Deck(cards: cards.shuffled())

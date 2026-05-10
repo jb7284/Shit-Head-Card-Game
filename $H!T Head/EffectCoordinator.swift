@@ -60,6 +60,8 @@ class EffectCoordinator {
                 reverseEffect = true
             }
             SoundManager.play(.reverse)
+        case .joker:
+            SoundManager.play(.joker)
         case .none, .normal, .sevenPlayed:
             break
         }

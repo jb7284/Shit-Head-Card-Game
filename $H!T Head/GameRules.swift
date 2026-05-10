@@ -2,7 +2,7 @@ import Foundation
 
 enum GameRules {
     static func canPlay(_ card: Card, effectiveTopCard: Card?, mustPlayUnderSeven: Bool) -> Bool {
-        if card.isWild || card.isBurn { return true }
+        if card.isJoker || card.isWild || card.isBurn { return true }
 
         if mustPlayUnderSeven {
             return card.rank <= .seven
@@ -18,6 +18,7 @@ enum GameRules {
     }
 
     static func faceUpDesirability(_ card: Card) -> Int {
+        if card.isJoker { return 21 }
         if card.isWild { return 20 }
         if card.isBurn { return 19 }
         return card.rank.rawValue

@@ -215,3 +215,70 @@ private struct ConfettiPiece: Identifiable {
         delay = Double.random(in: 0...0.3)
     }
 }
+
+// MARK: - Joker Target Picker
+
+struct JokerTargetPicker: View {
+    let players: [Player]
+    let jokerPlayerIndex: Int
+    let pileCount: Int
+    let onSelect: (Int) -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+
+            VStack(spacing: 20) {
+                Text("\u{1F0CF}")
+                    .font(.system(size: 50))
+
+                Text("Give pile to...")
+                    .font(.system(size: 22, weight: .black, design: .serif))
+                    .foregroundStyle(.white)
+
+                if pileCount > 0 {
+                    Text("\(pileCount) card\(pileCount == 1 ? "" : "s")")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+
+                VStack(spacing: 12) {
+                    ForEach(Array(players.enumerated()), id: \.element.id) { index, player in
+                        if index != jokerPlayerIndex && player.hasCards {
+                            Button {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    onSelect(index)
+                                }
+                            } label: {
+                                HStack(spacing: 12) {
+                                    AvatarView(avatar: player.avatar, size: 36)
+                                    Text(player.name)
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                    let total = player.hand.count + player.faceUp.count + player.faceDown.count + player.drawPile.count
+                                    Text("\(total) cards")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(.white.opacity(0.5))
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.white.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(.horizontal, 40)
+            }
+        }
+    }
+}

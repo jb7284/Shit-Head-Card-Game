@@ -10,4 +10,5 @@ enum GameEvent: Equatable {
     case burn           // 10 played or four-of-a-kind on top
     case pickup         // current player picked up the pile
     case failedFlip     // face-down flip was illegal; player took the pile
+    case joker          // joker played — pile given to chosen player
 }

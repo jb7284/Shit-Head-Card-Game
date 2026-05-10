@@ -33,6 +33,7 @@ enum GameSound {
     case pickup
     case skipped
     case reverse
+    case joker
 
     func generate(format: AVAudioFormat) -> AVAudioPCMBuffer {
         switch self {
@@ -40,6 +41,7 @@ enum GameSound {
         case .pickup: return Self.makePickup(format: format)
         case .skipped: return Self.makeSkipped(format: format)
         case .reverse: return Self.makeReverse(format: format)
+        case .joker: return Self.makeJoker(format: format)
         }
     }
 
@@ -118,6 +120,31 @@ enum GameSound {
             let harmonic = sin(2.0 * .pi * freq * 1.5 * t) * 0.12
 
             let envelope = min(t / 0.008, 1.0) * pow(1.0 - progress, 1.8)
+
+            samples[i] = Float((tone + harmonic) * envelope * 0.7)
+        }
+        return buffer
+    }
+
+    // Rising laugh-like trill — mischievous, chaotic
+    private static func makeJoker(format: AVAudioFormat) -> AVAudioPCMBuffer {
+        let sampleRate = format.sampleRate
+        let duration = 0.5
+        let frameCount = AVAudioFrameCount(sampleRate * duration)
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        buffer.frameLength = frameCount
+        let samples = buffer.floatChannelData![0]
+
+        for i in 0..<Int(frameCount) {
+            let t = Double(i) / sampleRate
+            let progress = t / duration
+
+            let trill = sin(2.0 * .pi * 18.0 * t) * 300.0
+            let freq = 600.0 + progress * 800.0 + trill
+            let tone = sin(2.0 * .pi * freq * t) * 0.3
+            let harmonic = sin(2.0 * .pi * freq * 1.5 * t) * 0.15
+
+            let envelope = min(t / 0.008, 1.0) * pow(1.0 - progress, 1.2)
 
             samples[i] = Float((tone + harmonic) * envelope * 0.7)
         }

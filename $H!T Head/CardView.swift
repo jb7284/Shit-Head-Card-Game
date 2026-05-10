@@ -67,17 +67,25 @@ struct CardView: View {
     }
 
     private var suitColor: Color {
-        card.suit == .hearts || card.suit == .diamonds
+        if card.isJoker {
+            return Color(red: 0.55, green: 0.0, blue: 0.55)
+        }
+        return card.suit == .hearts || card.suit == .diamonds
             ? Color(red: 0.72, green: 0.04, blue: 0.05)
             : Color(red: 0.06, green: 0.06, blue: 0.08)
     }
 
     private var smallFaceContent: some View {
         VStack(spacing: 0) {
-            Text(card.rank.label)
-                .font(.system(size: 11 * gs, weight: .bold, design: .serif))
-            Text(card.suit.character)
-                .font(.system(size: 9 * gs))
+            if card.isJoker {
+                Text("\u{1F0CF}")
+                    .font(.system(size: 16 * gs))
+            } else {
+                Text(card.rank.label)
+                    .font(.system(size: 11 * gs, weight: .bold, design: .serif))
+                Text(card.suit.character)
+                    .font(.system(size: 9 * gs))
+            }
         }
         .foregroundStyle(suitColor)
     }
@@ -119,10 +127,15 @@ struct CardView: View {
 
     private var cornerMark: some View {
         VStack(spacing: -2 * gs) {
-            Text(card.rank.label)
-                .font(.system(size: 13 * gs, weight: .heavy, design: .serif))
-            Text(card.suit.character)
-                .font(.system(size: 10 * gs, weight: .bold))
+            if card.isJoker {
+                Text("\u{2605}")
+                    .font(.system(size: 12 * gs, weight: .heavy))
+            } else {
+                Text(card.rank.label)
+                    .font(.system(size: 13 * gs, weight: .heavy, design: .serif))
+                Text(card.suit.character)
+                    .font(.system(size: 10 * gs, weight: .bold))
+            }
         }
         .foregroundStyle(suitColor)
         .shadow(color: .white.opacity(0.45), radius: 0.5, y: 0.5)
@@ -130,7 +143,15 @@ struct CardView: View {
 
     @ViewBuilder
     private var centerPips: some View {
-        if card.rank.rawValue <= Rank.ten.rawValue {
+        if card.isJoker {
+            VStack(spacing: 2 * gs) {
+                Text("\u{1F0CF}")
+                    .font(.system(size: 28 * gs))
+                Text("JOKER")
+                    .font(.system(size: 10 * gs, weight: .black, design: .serif))
+                    .foregroundStyle(suitColor)
+            }
+        } else if card.rank.rawValue <= Rank.ten.rawValue {
             pipLayout
         } else {
             VStack(spacing: 2 * gs) {
@@ -161,6 +182,7 @@ struct CardView: View {
 
     private var pipRows: [Int] {
         switch card.rank {
+        case .joker: return [1]
         case .two: return [1, 1]
         case .three: return [1, 1, 1]
         case .four: return [2, 2]

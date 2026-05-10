@@ -12,6 +12,8 @@ class GameEngine {
     var openingCard: Card? = nil
     var skippedPlayerID: String? = nil
     var lastBurnWasFourOfAKind = false
+    var pendingJokerPlayerIndex: Int? = nil
+    var jokerTargetPlayerID: String? = nil
 
     // MARK: - Setup
 
@@ -23,6 +25,8 @@ class GameEngine {
         openingCard = nil
         skippedPlayerID = nil
         lastBurnWasFourOfAKind = false
+        pendingJokerPlayerIndex = nil
+        jokerTargetPlayerID = nil
         state = GameDealer.newGameState(playerCount: playerCount)
         message = "Swap cards between your hand and face-up cards"
     }
@@ -56,7 +60,7 @@ class GameEngine {
 
     private func determineStartingPlayer() -> Int {
         let suitOrder: [Suit] = [.clubs, .diamonds, .spades, .hearts]
-        for rank in Rank.allCases where rank != .two {
+        for rank in Rank.allCases where rank != .two && rank != .joker {
             for suit in suitOrder {
                 for (index, player) in state.players.enumerated() {
                     if let card = player.hand.first(where: { $0.rank == rank && $0.suit == suit }) {
@@ -236,6 +240,11 @@ class GameEngine {
         openingCard = nil
         lastBurnWasFourOfAKind = false
 
+        if card.isJoker {
+            handleJoker(card: card, playerIndex: playerIndex)
+            return
+        }
+
         if checkForBurn(card: card, playerIndex: playerIndex) {
             return
         }
@@ -320,6 +329,51 @@ class GameEngine {
         mustPlayUnderSeven = false
         message = "\(state.players[playerIndex].name) picked up the pile"
         advanceTurn()
+    }
+
+    // MARK: - Joker
+
+    private func handleJoker(card: Card, playerIndex: Int) {
+        state.pile.removeAll { $0.uid == card.uid }
+        mustPlayUnderSeven = false
+        pendingJokerPlayerIndex = playerIndex
+        publishEvent(.joker)
+
+        if state.players[playerIndex].isAI {
+            message = "\(state.players[playerIndex].name) played Joker!"
+        } else {
+            message = "Choose a player to give the pile to!"
+        }
+    }
+
+    func assignJokerPile(to targetIndex: Int) {
+        guard let playerIndex = pendingJokerPlayerIndex else { return }
+        pendingJokerPlayerIndex = nil
+        jokerTargetPlayerID = state.players[targetIndex].id
+        giveCurrentPileTo(targetIndex)
+        message = "Gave the pile to \(state.players[targetIndex].name)!"
+        if checkWin(playerIndex: playerIndex) { return }
+        advanceTurn()
+    }
+
+    private func giveCurrentPileTo(_ targetIndex: Int) {
+        state.players[targetIndex].hand.append(contentsOf: state.pile)
+        state.players[targetIndex].hand = GameRules.sortPlayableOrder(state.players[targetIndex].hand)
+        state.pile.removeAll()
+    }
+
+    func bestJokerTarget(playerIndex: Int) -> Int {
+        var bestIdx = -1
+        var fewestCards = Int.max
+        for (idx, player) in state.players.enumerated() {
+            guard idx != playerIndex, player.hasCards else { continue }
+            let total = player.hand.count + player.faceUp.count + player.faceDown.count + player.drawPile.count
+            if total < fewestCards {
+                fewestCards = total
+                bestIdx = idx
+            }
+        }
+        return bestIdx >= 0 ? bestIdx : playerIndex
     }
 
     // MARK: - Turn Management
@@ -438,9 +492,15 @@ class GameEngine {
             }
         }
 
-        let regular = playable.filter { !$0.isWild && !$0.isBurn }
+        let regular = playable.filter { !$0.isWild && !$0.isBurn && !$0.isJoker }
         let wilds = grouped[.two] ?? []
         let burns = grouped[.ten] ?? []
+        let jokers = grouped[.joker] ?? []
+
+        if !jokers.isEmpty && state.pile.count >= 4 {
+            playCards([jokers[0]])
+            return
+        }
 
         if !regular.isEmpty {
             let lowestRank = regular.min(by: { $0.rank < $1.rank })!.rank
@@ -464,6 +524,11 @@ class GameEngine {
             return
         }
 
+        if !jokers.isEmpty {
+            playCards([jokers[0]])
+            return
+        }
+
         pickUpPile()
     }
 
@@ -484,10 +549,11 @@ class GameEngine {
         }
 
         let grouped = Dictionary(grouping: playable) { $0.rank }
-        let regular = playable.filter { !$0.isWild && !$0.isBurn }
+        let regular = playable.filter { !$0.isWild && !$0.isBurn && !$0.isJoker }
         let wilds = grouped[.two] ?? []
         let burns = grouped[.ten] ?? []
         let sevens = grouped[.seven] ?? []
+        let jokers = grouped[.joker] ?? []
         let normalRegular = regular.filter { !$0.isSeven }
 
         // 1. Always complete a four-of-a-kind burn — free pile clear + go again
@@ -512,7 +578,13 @@ class GameEngine {
             }
         }
 
-        // 3. Lead with a rank held 3+ of — set up a potential self-burn next turn
+        // 3. Joker: dump a big pile on the player closest to going out
+        if !jokers.isEmpty && state.pile.count >= 5 {
+            playCards([jokers[0]])
+            return
+        }
+
+        // 4. Lead with a rank held 3+ of — set up a potential self-burn next turn
         if !normalRegular.isEmpty {
             let normalGrouped = Dictionary(grouping: normalRegular) { $0.rank }
             for (_, cards) in normalGrouped.sorted(by: { $0.key < $1.key }) {
@@ -555,6 +627,12 @@ class GameEngine {
         // 8. Forced burn on a small pile — no other option
         if !burns.isEmpty {
             playCards([burns[0]])
+            return
+        }
+
+        // 9. Joker as last resort
+        if !jokers.isEmpty {
+            playCards([jokers[0]])
             return
         }
 

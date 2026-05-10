@@ -116,6 +116,17 @@ struct ContentView: View {
                 .transition(.opacity)
             }
         }
+        .overlay {
+            if engine.pendingJokerPlayerIndex != nil {
+                JokerTargetPicker(
+                    players: engine.state.players,
+                    jokerPlayerIndex: engine.pendingJokerPlayerIndex!,
+                    pileCount: effects.lastPileSnapshot.count,
+                    onSelect: handleJokerTarget
+                )
+                .transition(.opacity)
+            }
+        }
     }
 
     // MARK: - Phase Content
@@ -307,6 +318,19 @@ struct ContentView: View {
         triggerAI()
     }
 
+    // MARK: - Joker
+
+    private func handleJokerTarget(_ targetIndex: Int) {
+        effects.prepareForAction(savingPileFrom: engine)
+        let pre = flights.snapshot(from: engine)
+        withAnimation(springAnim) {
+            engine.assignJokerPile(to: targetIndex)
+        }
+        let post = flights.snapshot(from: engine)
+        flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
+        triggerAI()
+    }
+
     // MARK: - Card Selection & Drag
 
     private func handleCardTap(_ card: Card) {
@@ -403,7 +427,15 @@ struct ContentView: View {
             let post = flights.snapshot(from: engine)
             flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
             effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
-            triggerAI()
+
+            if let jokerIdx = engine.pendingJokerPlayerIndex, engine.state.players[jokerIdx].isAI {
+                let target = engine.bestJokerTarget(playerIndex: jokerIdx)
+                try? await Task.sleep(for: .milliseconds(1500))
+                guard !Task.isCancelled, engine.state.phase == .playing else { return }
+                handleJokerTarget(target)
+            } else {
+                triggerAI()
+            }
         }
     }
 }
