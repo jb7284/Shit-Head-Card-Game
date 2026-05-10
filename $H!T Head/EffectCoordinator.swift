@@ -1,0 +1,159 @@
+import SwiftUI
+
+@MainActor
+@Observable
+class EffectCoordinator {
+    var burnEffect = false
+    var wildEffect = false
+    var turnPulse = false
+
+    var pendingBurnPile: [Card] = []
+    var lastPileSnapshot: [Card] = []
+    var burnedCards: [Card] = []
+    var burnFlyProgress: CGFloat = 0
+
+    var revealedFaceDownIndex: Int? = nil
+
+    var rejectionShakeID: UUID? = nil
+    var rejectionShakeTrigger: CGFloat = 0
+    var rejectionMessage: String? = nil
+    private var rejectionMessageTask: Task<Void, Never>?
+
+    private let rejectionShakeDuration: TimeInterval = 0.45
+    private let rejectionMessageDuration: TimeInterval = 1.5
+
+    func handle(_ event: GameEvent, playFlightDuration: TimeInterval, isCurrentPlayerAI: Bool) {
+        switch event {
+        case .burn:
+            let burnDelay = playFlightDuration + 0.5
+            DispatchQueue.main.asyncAfter(deadline: .now() + burnDelay) { [weak self] in
+                self?.triggerBurnEffect()
+                SoundManager.play(.burn)
+            }
+        case .wild:
+            triggerWildEffect()
+        case .pickup, .failedFlip:
+            SoundManager.play(.pickup)
+        case .skip:
+            if !isCurrentPlayerAI {
+                SoundManager.play(.skipped)
+            }
+        case .none, .normal, .sevenPlayed, .reverse:
+            break
+        }
+    }
+
+    func setupPendingBurn(
+        pre: FlightOrchestrator.StateSnapshot,
+        post: FlightOrchestrator.StateSnapshot,
+        lastEvent: GameEvent
+    ) {
+        guard lastEvent == .burn else { return }
+        var allPostIDs = Set(post.pile.map { $0.uid })
+        for p in post.players {
+            allPostIDs.formUnion(p.hand.map { $0.uid })
+            allPostIDs.formUnion(p.faceUp.map { $0.uid })
+            allPostIDs.formUnion(p.faceDown.map { $0.uid })
+            allPostIDs.formUnion(p.drawPile.map { $0.uid })
+        }
+        var playedCards: [Card] = []
+        for prePlayer in pre.players {
+            for card in prePlayer.hand {
+                if !allPostIDs.contains(card.uid) { playedCards.append(card) }
+            }
+            for card in prePlayer.faceUp {
+                if !allPostIDs.contains(card.uid) { playedCards.append(card) }
+            }
+            for card in prePlayer.faceDown {
+                if !allPostIDs.contains(card.uid) { playedCards.append(card) }
+            }
+        }
+        pendingBurnPile = lastPileSnapshot + playedCards
+    }
+
+    func triggerRejectionFeedback(for card: Card, engine: GameEngine) {
+        guard engine.difficulty == .easy else { return }
+
+        rejectionShakeID = card.uid
+        rejectionShakeTrigger = 0
+        withAnimation(.linear(duration: rejectionShakeDuration)) {
+            rejectionShakeTrigger = 1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + rejectionShakeDuration + 0.05) { [weak self] in
+            if self?.rejectionShakeID == card.uid {
+                self?.rejectionShakeID = nil
+                self?.rejectionShakeTrigger = 0
+            }
+        }
+
+        let reason = rejectionReason(for: card, engine: engine)
+        rejectionMessageTask?.cancel()
+        withAnimation(.easeOut(duration: 0.2)) {
+            rejectionMessage = reason
+        }
+        rejectionMessageTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeIn(duration: 0.3)) {
+                self?.rejectionMessage = nil
+            }
+        }
+    }
+
+    func restartTurnPulse() {
+        turnPulse = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.turnPulse = true
+        }
+    }
+
+    func prepareForAction(savingPileFrom engine: GameEngine) {
+        pendingBurnPile.removeAll()
+        lastPileSnapshot = engine.state.pile
+    }
+
+    private func rejectionReason(for card: Card, engine: GameEngine) -> String {
+        if engine.mustPlayUnderSeven {
+            return "Must play 7 or lower \u{2014} a 7 was played"
+        }
+        if let top = engine.state.effectiveTopCard {
+            return "Must play \(top.rank.label) or higher (or a 2 / 10)"
+        }
+        return "Can\u{2019}t play that card right now"
+    }
+
+    private func triggerBurnEffect() {
+        let flyOffCards = pendingBurnPile.isEmpty
+            ? Array(lastPileSnapshot.suffix(4))
+            : Array(pendingBurnPile.suffix(4))
+
+        withAnimation(.easeOut(duration: 0.6)) {
+            burnEffect = true
+            pendingBurnPile.removeAll()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            self?.burnEffect = false
+        }
+
+        burnedCards = flyOffCards
+        burnFlyProgress = 0
+        withAnimation(.easeIn(duration: 0.55)) {
+            burnFlyProgress = 1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            self?.burnedCards.removeAll()
+            self?.burnFlyProgress = 0
+        }
+    }
+
+    private func triggerWildEffect() {
+        withAnimation(.easeOut(duration: 0.15)) {
+            wildEffect = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            withAnimation(.easeOut(duration: 0.15)) {
+                self?.wildEffect = false
+            }
+        }
+    }
+}
