@@ -372,6 +372,7 @@ struct PileLandingZone: View {
                 .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.10).opacity(0.35), radius: 12 * gs)
                 .shadow(color: Color(red: 0.90, green: 0.45, blue: 0.08).opacity(0.20), radius: 24 * gs)
                 .shadow(color: .black.opacity(0.22), radius: 10 * gs, y: 5 * gs)
+                .reportPileFrame()
 
             ForEach(0..<min(pileCount, 3), id: \.self) { index in
                 RoundedRectangle(cornerRadius: 7 * gs)
@@ -380,10 +381,6 @@ struct PileLandingZone: View {
                     .rotationEffect(.degrees(Double(index - 1) * 5))
                     .offset(x: CGFloat(index - 1) * 2 * gs, y: CGFloat(index) * 1.5 * gs)
             }
-
-            Color.clear
-                .frame(width: 58 * gs, height: 82 * gs)
-                .reportPileFrame()
 
             if let topCard {
                 CardView(card: topCard, faceUp: true)
