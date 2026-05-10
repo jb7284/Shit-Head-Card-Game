@@ -18,9 +18,19 @@ struct PlayerAreaView: View {
     let onDragUpdate: (CGSize) -> Void
     let onDragEnd: (CGSize) -> Void
 
+    @Environment(\.gameScale) private var gs
+
     private var isDraggingFaceUp: Bool {
         dragCardID != nil && human.faceUp.contains(where: { $0.id == dragCardID })
     }
+
+    private var dragFaceUpIndex: Int? {
+        guard let dragCardID else { return nil }
+        return human.faceUp.firstIndex(where: { $0.id == dragCardID })
+    }
+
+    // Small card width (38 * gs) plus the HStack spacing (6).
+    private var faceUpSlotStep: CGFloat { 38 * gs + 6 }
 
     var body: some View {
         VStack(spacing: 2) {
@@ -67,7 +77,7 @@ struct PlayerAreaView: View {
                     .hideIfInFlight(human.faceDown[index].uid)
             }
             if index < human.faceUp.count {
-                faceUpCard(human.faceUp[index], isPlayingFaceUp: isPlayingFaceUp)
+                faceUpCard(human.faceUp[index], index: index, isPlayingFaceUp: isPlayingFaceUp)
             }
         }
         .onTapGesture(count: 2) {
@@ -90,11 +100,15 @@ struct PlayerAreaView: View {
         }
     }
 
-    private func faceUpCard(_ card: Card, isPlayingFaceUp: Bool) -> some View {
+    private func faceUpCard(_ card: Card, index: Int, isPlayingFaceUp: Bool) -> some View {
         let playable = isPlayingFaceUp && canPlay(card)
         let isSelected = selectedCards.contains(card)
         let isDragTarget = dragCardID == card.id
         let isGroupedFaceUp = isSelected && !isDragTarget && isDraggingFaceUp
+        let convergenceX: CGFloat = {
+            guard isGroupedFaceUp, let target = dragFaceUpIndex else { return 0 }
+            return CGFloat(target - index) * faceUpSlotStep
+        }()
 
         return CardView(
             card: card,
@@ -107,7 +121,7 @@ struct PlayerAreaView: View {
         .hideIfInFlight(card.uid)
         .offset(y: -10)
         .offset(
-            x: (isDragTarget || isGroupedFaceUp) ? dragOffset.width : 0,
+            x: (isDragTarget || isGroupedFaceUp) ? dragOffset.width + convergenceX : 0,
             y: (isDragTarget || isGroupedFaceUp) ? dragOffset.height : 0
         )
         .scaleEffect((isDragTarget || isGroupedFaceUp) ? 1.2 : 1.0)
