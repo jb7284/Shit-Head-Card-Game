@@ -7,12 +7,13 @@ struct CardView: View {
     var selected: Bool = false
     var small: Bool = false
     var dimmed: Bool = false
+    var style: CardViewStyle = .standard
 
     @Environment(\.gameScale) private var gs
 
-    private var width: CGFloat { (small ? 38 : 58) * gs }
-    private var height: CGFloat { (small ? 54 : 82) * gs }
-    private var cornerRadius: CGFloat { (small ? 5 : 7) * gs }
+    private var width: CGFloat { style.width(small: small) * gs }
+    private var height: CGFloat { style.height(small: small) * gs }
+    private var cornerRadius: CGFloat { style.cornerRadius(small: small) * gs }
 
     var body: some View {
         ZStack {
@@ -264,18 +265,51 @@ struct CardView: View {
     private var shadowColor: Color {
         if selected { return .green.opacity(0.45) }
         if highlight { return .yellow.opacity(0.3) }
+        if style == .opponent { return .black.opacity(0.55) }
         return .black.opacity(0.32)
     }
 
     private var shadowRadius: CGFloat {
         if selected { return 9 * gs }
         if highlight { return 5 * gs }
+        if style == .opponent { return 3 * gs }
         return (small ? 2 : 4) * gs
     }
 
     private var shadowY: CGFloat {
         if selected { return 6 * gs }
+        if style == .opponent { return 1.5 * gs }
         return (small ? 2 : 4) * gs
+    }
+}
+
+enum CardViewStyle {
+    case standard
+    case opponent
+    case mini
+
+    func width(small: Bool) -> CGFloat {
+        switch self {
+        case .standard: return small ? 38 : 58
+        case .opponent: return 30
+        case .mini: return 24
+        }
+    }
+
+    func height(small: Bool) -> CGFloat {
+        switch self {
+        case .standard: return small ? 54 : 82
+        case .opponent: return 40
+        case .mini: return 18
+        }
+    }
+
+    func cornerRadius(small: Bool) -> CGFloat {
+        switch self {
+        case .standard: return small ? 5 : 7
+        case .opponent: return 4
+        case .mini: return 3
+        }
     }
 }
 
@@ -344,10 +378,27 @@ struct FeltTableBackground: View {
 }
 
 struct PileLandingZone: View {
-    let topCard: Card?
+    let recentPile: [Card]
     let pileCount: Int
 
     @Environment(\.gameScale) private var gs
+
+    private func rotation(for index: Int, total: Int) -> Double {
+        let seed = index + total
+        let angles: [Double] = [-4, 2.5, -1.5, 3, -3.5, 1, -2, 4.5]
+        return angles[seed % angles.count]
+    }
+
+    private func offset(for index: Int, total: Int) -> CGSize {
+        let seed = index + total
+        let offsets: [CGSize] = [
+            CGSize(width: -1.5, height: -1),
+            CGSize(width: 1, height: 0.5),
+            CGSize(width: -0.5, height: 1),
+            CGSize(width: 1.5, height: -0.5),
+        ]
+        return offsets[seed % offsets.count]
+    }
 
     var body: some View {
         ZStack {
@@ -374,19 +425,19 @@ struct PileLandingZone: View {
                 .shadow(color: .black.opacity(0.22), radius: 10 * gs, y: 5 * gs)
                 .reportPileFrame()
 
-            ForEach(0..<min(pileCount, 3), id: \.self) { index in
-                RoundedRectangle(cornerRadius: 7 * gs)
-                    .fill(Color.black.opacity(0.12))
-                    .frame(width: 58 * gs, height: 82 * gs)
-                    .rotationEffect(.degrees(Double(index - 1) * 5))
-                    .offset(x: CGFloat(index - 1) * 2 * gs, y: CGFloat(index) * 1.5 * gs)
-            }
-
-            if let topCard {
-                CardView(card: topCard, faceUp: true)
-                    .hideIfInFlight(topCard.uid)
-                    .rotationEffect(.degrees(Double((pileCount % 5) - 2) * 2.5))
-                    .transition(.opacity)
+            let visible = recentPile.suffix(4)
+            ForEach(Array(visible.enumerated()), id: \.element.uid) { index, card in
+                let isTop = index == visible.count - 1
+                CardView(card: card, faceUp: true)
+                    .hideIfInFlight(card.uid)
+                    .rotationEffect(.degrees(rotation(for: index, total: pileCount)))
+                    .offset(
+                        x: offset(for: index, total: pileCount).width * gs,
+                        y: offset(for: index, total: pileCount).height * gs
+                    )
+                    .zIndex(Double(index))
+                    .allowsHitTesting(false)
+                    .opacity(isTop ? 1 : 0.85)
             }
         }
     }

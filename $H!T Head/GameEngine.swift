@@ -7,51 +7,19 @@ class GameEngine {
     var message: String = ""
     var mustPlayUnderSeven: Bool = false
     var lastEvent: GameEvent = .none
+    var eventSerial: Int = 0
     var difficulty: Difficulty = .medium
+    var openingCard: Card? = nil
 
     // MARK: - Setup
 
-    func startNewGame(difficulty: Difficulty = .medium) {
-        state = GameState()
+    func startNewGame(playerCount: Int = 2, difficulty: Difficulty = .medium) {
         self.difficulty = difficulty
-        state.deck = Deck.standard(deckCount: 2)
-
-        let aiCharacters: [(name: String, avatar: String)] = [
-            ("Marco",    "avatar_marco"),
-            ("Sofia",    "avatar_sofia"),
-            ("Dante",    "avatar_dante"),
-            ("Ava",      "avatar_ava"),
-            ("Jake",     "avatar_jake"),
-            ("Scarlett", "avatar_scarlett"),
-        ]
-        let chosen = aiCharacters.shuffled().prefix(3)
-        var players: [Player] = [Player(id: "human", name: "You", avatar: "", isAI: false)]
-        for (i, char) in chosen.enumerated() {
-            players.append(Player(id: "ai\(i)", name: char.name, avatar: char.avatar, isAI: true))
-        }
-        state.players = players
-
-        deal()
-    }
-
-    private func deal() {
-        for i in state.players.indices {
-            state.players[i].faceDown = state.deck.draw(3)
-            state.players[i].faceUp = state.deck.draw(3)
-        }
-
-        var playerIndex = 0
-        while let card = state.deck.draw() {
-            state.players[playerIndex].drawPile.append(card)
-            playerIndex = (playerIndex + 1) % state.players.count
-        }
-
-        for i in state.players.indices {
-            refillHand(playerIndex: i)
-        }
-
-        state.phase = .swapping
-        state.currentPlayerIndex = 0
+        eventSerial = 0
+        lastEvent = .none
+        mustPlayUnderSeven = false
+        openingCard = nil
+        state = GameDealer.newGameState(playerCount: playerCount)
         message = "Swap cards between your hand and face-up cards"
     }
 
@@ -87,7 +55,8 @@ class GameEngine {
         for rank in Rank.allCases where rank != .two {
             for suit in suitOrder {
                 for (index, player) in state.players.enumerated() {
-                    if player.hand.contains(where: { $0.rank == rank && $0.suit == suit }) {
+                    if let card = player.hand.first(where: { $0.rank == rank && $0.suit == suit }) {
+                        openingCard = card
                         return index
                     }
                 }
@@ -114,7 +83,7 @@ class GameEngine {
 
             for h in 0..<hand.count {
                 for f in 0..<faceUp.count {
-                    if faceUpDesirability(hand[h]) > faceUpDesirability(faceUp[f]) {
+                    if GameRules.faceUpDesirability(hand[h]) > GameRules.faceUpDesirability(faceUp[f]) {
                         let temp = hand[h]
                         hand[h] = faceUp[f]
                         faceUp[f] = temp
@@ -144,7 +113,9 @@ class GameEngine {
 
             if chosenFaceUp.isEmpty {
                 chosenFaceUp = Array(
-                    allCards.sorted { faceUpDesirability($0) > faceUpDesirability($1) }.prefix(3)
+                    allCards.sorted {
+                        GameRules.faceUpDesirability($0) > GameRules.faceUpDesirability($1)
+                    }.prefix(3)
                 )
             }
 
@@ -160,24 +131,10 @@ class GameEngine {
         }
     }
 
-    private func faceUpDesirability(_ card: Card) -> Int {
-        if card.isWild { return 20 }
-        if card.isBurn { return 19 }
-        return card.rank.rawValue
-    }
-
     // MARK: - Move Validation
 
     func canPlay(_ card: Card) -> Bool {
-        if card.isWild || card.isBurn { return true }
-
-        if mustPlayUnderSeven {
-            return card.rank <= .seven
-        }
-
-        guard let top = state.effectiveTopCard else { return true }
-
-        return card.rank >= top.rank
+        GameRules.canPlay(card, effectiveTopCard: state.effectiveTopCard, mustPlayUnderSeven: mustPlayUnderSeven)
     }
 
     func playableCards(for player: Player) -> [Card] {
@@ -195,6 +152,10 @@ class GameEngine {
         guard !cards.isEmpty else { return }
         guard cards.allSatisfy({ $0.rank == cards[0].rank }) else { return }
         guard canPlay(cards[0]) else { return }
+
+        if let required = openingCard {
+            guard cards.contains(required) else { return }
+        }
 
         let playerIndex = state.currentPlayerIndex
         var player = state.players[playerIndex]
@@ -217,7 +178,7 @@ class GameEngine {
         state.pile.append(contentsOf: cards)
         state.players[playerIndex] = player
 
-        refillHand(playerIndex: playerIndex)
+        GameDealer.refillHand(&state.players[playerIndex])
         afterPlay(card: cards[0], playerIndex: playerIndex)
     }
 
@@ -240,8 +201,8 @@ class GameEngine {
             state.players[playerIndex].hand.append(card)
             state.players[playerIndex].hand.append(contentsOf: state.pile)
             state.pile.removeAll()
-            state.players[playerIndex].hand.sort { $0.rank < $1.rank }
-            lastEvent = .failedFlip
+            state.players[playerIndex].hand = GameRules.sortPlayableOrder(state.players[playerIndex].hand)
+            publishEvent(.failedFlip)
             mustPlayUnderSeven = false
             message = "\(state.players[playerIndex].name) flipped \(card.display) — picked up the pile!"
             advanceTurn()
@@ -265,18 +226,11 @@ class GameEngine {
         }
     }
 
-    private func refillHand(playerIndex: Int) {
-        while state.players[playerIndex].hand.count < 3,
-              !state.players[playerIndex].drawPile.isEmpty {
-            let card = state.players[playerIndex].drawPile.removeFirst()
-            state.players[playerIndex].hand.append(card)
-        }
-        state.players[playerIndex].hand.sort { $0.rank < $1.rank }
-    }
-
     // MARK: - After Play Logic
 
     private func afterPlay(card: Card, playerIndex: Int) {
+        openingCard = nil
+
         if checkForBurn(card: card, playerIndex: playerIndex) {
             return
         }
@@ -294,21 +248,21 @@ class GameEngine {
 
         if card.isReverse {
             state.playDirection *= -1
-            lastEvent = .reverse
+            publishEvent(.reverse)
             message = "\(state.players[playerIndex].name) played \(card.display) — reversed!"
         } else if card.isWild {
-            lastEvent = .wild
+            publishEvent(.wild)
             message = "\(state.players[playerIndex].name) played \(card.display) — wild!"
         } else if card.isSkip {
-            lastEvent = .skip
+            publishEvent(.skip)
             message = "\(state.players[playerIndex].name) played \(card.display) — skip!"
             advanceTurn(skip: true)
             return
         } else if card.isSeven {
-            lastEvent = .sevenPlayed
+            publishEvent(.sevenPlayed)
             message = "\(state.players[playerIndex].name) played \(card.display)"
         } else {
-            lastEvent = .normal
+            publishEvent(.normal)
             message = "\(state.players[playerIndex].name) played \(card.display)"
         }
 
@@ -316,10 +270,7 @@ class GameEngine {
     }
 
     private func checkForBurn(card: Card, playerIndex: Int) -> Bool {
-        guard state.pile.count >= 4 else { return false }
-        let topFour = state.pile.suffix(4)
-        let allSameRank = topFour.allSatisfy { $0.rank == card.rank }
-        if allSameRank {
+        if GameRules.isFourOfAKindBurn(pile: state.pile, triggerCard: card) {
             message = "Four \(card.rank.label)s — pile burned!"
             burnPile(playerIndex: playerIndex)
             return true
@@ -329,7 +280,7 @@ class GameEngine {
 
     private func burnPile(playerIndex: Int) {
         state.pile.removeAll()
-        lastEvent = .burn
+        publishEvent(.burn)
         mustPlayUnderSeven = false
 
         if checkWin(playerIndex: playerIndex) { return }
@@ -349,8 +300,8 @@ class GameEngine {
         let playerIndex = state.currentPlayerIndex
         state.players[playerIndex].hand.append(contentsOf: state.pile)
         state.pile.removeAll()
-        state.players[playerIndex].hand.sort { $0.rank < $1.rank }
-        lastEvent = .pickup
+        state.players[playerIndex].hand = GameRules.sortPlayableOrder(state.players[playerIndex].hand)
+        publishEvent(.pickup)
         mustPlayUnderSeven = false
         message = "\(state.players[playerIndex].name) picked up the pile"
         advanceTurn()
@@ -406,9 +357,18 @@ class GameEngine {
         return false
     }
 
+    private func publishEvent(_ event: GameEvent) {
+        lastEvent = event
+        eventSerial += 1
+    }
+
     // MARK: - AI
 
     func performAITurn() {
+        if let required = openingCard {
+            playCards([required])
+            return
+        }
         switch difficulty {
         case .easy: performEasyTurn()
         case .medium: performMediumTurn()

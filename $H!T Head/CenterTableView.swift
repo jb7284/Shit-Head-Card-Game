@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct CenterTableView: View {
-    let topCard: Card?
+    let recentPile: [Card]
     let pileCount: Int
+    private var topCard: Card? { recentPile.last }
     let showDropTarget: Bool
     let burnEffect: Bool
     let wildEffect: Bool
@@ -27,7 +28,7 @@ struct CenterTableView: View {
                     .frame(width: pickUpButtonWidth * gs, height: pickUpButtonHeight * gs)
 
                 VStack(spacing: 2) {
-                    PileLandingZone(topCard: topCard, pileCount: pileCount)
+                    PileLandingZone(recentPile: recentPile, pileCount: pileCount)
                         .overlay(dropTargetOverlay)
 
                     Text("Pile: \(pileCount)")
@@ -37,8 +38,8 @@ struct CenterTableView: View {
 
                 pickUpButton
                     .frame(width: pickUpButtonWidth * gs, height: pickUpButtonHeight * gs)
-                    .opacity(canPickUpPile ? 1 : 0)
-                    .allowsHitTesting(canPickUpPile)
+                    .opacity(canPickUpPile && !mustPickUpPile ? 1 : 0)
+                    .allowsHitTesting(canPickUpPile && !mustPickUpPile)
                     .animation(.easeInOut(duration: 0.2), value: canPickUpPile)
                     .animation(.easeInOut(duration: 0.2), value: mustPickUpPile)
             }

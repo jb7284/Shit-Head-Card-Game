@@ -2,7 +2,7 @@
 
 A SwiftUI card game for macOS. Play *Shithead* — the last player holding cards is crowned the Sh\*t Head.
 
-![Swift](https://img.shields.io/badge/Swift-5.9+-orange) ![Platform](https://img.shields.io/badge/Platform-macOS%2014+-blue)
+![Swift](https://img.shields.io/badge/Swift-Xcode%2026.4+-orange) ![Platform](https://img.shields.io/badge/Platform-macOS%2026.3+-blue)
 
 
 ## How to Play
@@ -28,7 +28,7 @@ Play through your zones in order: **hand -> face-up -> face-down**. On your turn
 
 ### Multi-Card Plays
 
-Tap cards to select matching ranks, then play them together. Or double-tap a card to instantly play all matching-rank cards from your hand.
+Tap cards to select matching ranks, then drag upward to play them together. Double-tapping a card plays that single card immediately.
 
 ### Face-Down Cards
 
@@ -40,7 +40,7 @@ Get rid of all your cards and you're out. Last player holding cards loses.
 
 ## Build and Run
 
-Open `$H!T Head.xcodeproj` in Xcode 15+ and run. Requires macOS 14+ (uses `@Observable` and `Task.sleep(for:)`).
+Open `$H!T Head.xcodeproj` in Xcode 26.4+ and run. The current project target requires macOS 26.3+.
 
 ```sh
 xcodebuild -project '$H!T Head.xcodeproj' -scheme '$H!T Head' -destination 'platform=macOS' build

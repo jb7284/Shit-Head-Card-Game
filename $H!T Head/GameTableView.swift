@@ -9,6 +9,8 @@ struct GameTableView: View {
     let burnEffect: Bool
     let wildEffect: Bool
     let turnPulse: Bool
+    let revealedFaceDownIndex: Int?
+    let pendingBurnPile: [Card]
     let onPickUpPile: () -> Void
     let onFaceDownTap: (Int) -> Void
     let onCardTap: (Card) -> Void
@@ -41,8 +43,12 @@ struct GameTableView: View {
                 VStack(spacing: 2) {
                     Spacer(minLength: 0)
                     CenterTableView(
-                        topCard: engine.state.topCard,
-                        pileCount: engine.state.pile.count,
+                        recentPile: pendingBurnPile.isEmpty
+                            ? Array(engine.state.pile.suffix(4))
+                            : Array(pendingBurnPile.suffix(4)),
+                        pileCount: pendingBurnPile.isEmpty
+                            ? engine.state.pile.count
+                            : pendingBurnPile.count,
                         showDropTarget: dragCardID != nil,
                         burnEffect: burnEffect,
                         wildEffect: wildEffect,
@@ -68,8 +74,11 @@ struct GameTableView: View {
                 PlayerAreaView(
                     human: human,
                     isMyTurn: isHumanTurn,
+                    mustPickUp: mustPickUpPile,
+                    openingCard: engine.openingCard,
                     turnPulse: turnPulse,
                     showHints: showHints,
+                    revealedFaceDownIndex: revealedFaceDownIndex,
                     selectedCards: $selectedCards,
                     dragCardID: $dragCardID,
                     dragOffset: $dragOffset,
@@ -79,7 +88,8 @@ struct GameTableView: View {
                     onCardDoubleTap: onCardDoubleTap,
                     onDragStart: onDragStart,
                     onDragUpdate: onDragUpdate,
-                    onDragEnd: onDragEnd
+                    onDragEnd: onDragEnd,
+                    onPickUpPile: onPickUpPile
                 )
             }
         }

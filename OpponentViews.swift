@@ -57,6 +57,7 @@ struct TopOpponentView: View {
 
                     if player.drawPile.count > 0 {
                         DrawPileStack(count: player.drawPile.count, mini: true)
+                            .reportDrawPileFrame(player.id)
                             .padding(.leading, 6 * gs)
                     }
                 }
@@ -146,6 +147,7 @@ struct SideOpponentView: View {
 
             if player.drawPile.count > 0 {
                 DrawPileStack(count: player.drawPile.count, mini: true)
+                    .reportDrawPileFrame(player.id)
                     .padding(.top, 4 * gs)
             }
         }
@@ -250,59 +252,26 @@ struct SideOpponentHandFan: View {
 struct OpponentCardView: View {
     var card: Card? = nil
 
-    @Environment(\.gameScale) private var gs
-    private var isVisible: Bool { card != nil }
-
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 4 * gs)
-                .fill(isVisible ? Color(white: 0.95) : Color(red: 0.50, green: 0.38, blue: 0.16))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4 * gs)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
-                )
-            if let card {
-                VStack(spacing: -1 * gs) {
-                    Text(card.rank.label)
-                        .font(.system(size: 14 * gs, weight: .bold, design: .serif))
-                    Text(card.suit.character)
-                        .font(.system(size: 11 * gs))
-                }
-                .foregroundStyle(card.suit == .hearts || card.suit == .diamonds
-                                 ? Color(red: 0.8, green: 0.1, blue: 0.1)
-                                 : Color(red: 0.1, green: 0.1, blue: 0.15))
-            }
-        }
-        .frame(width: 30 * gs, height: 40 * gs)
+        CardView(
+            card: card ?? Card(suit: .clubs, rank: .ace),
+            faceUp: card != nil,
+            small: true,
+            style: .opponent
+        )
     }
 }
 
 struct MiniCardView: View {
     var card: Card? = nil
 
-    private var isVisible: Bool { card != nil }
-
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(isVisible ? Color(white: 0.95) : Color(red: 0.50, green: 0.38, blue: 0.16))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 3)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-                )
-            if let card {
-                HStack(spacing: 1) {
-                    Text(card.rank.label)
-                        .font(.system(size: 8, weight: .bold, design: .serif))
-                    Text(card.suit.character)
-                        .font(.system(size: 7))
-                }
-                .foregroundStyle(card.suit == .hearts || card.suit == .diamonds
-                                 ? Color(red: 0.8, green: 0.1, blue: 0.1)
-                                 : Color(red: 0.1, green: 0.1, blue: 0.15))
-            }
-        }
-        .frame(width: 24, height: 18)
+        CardView(
+            card: card ?? Card(suit: .clubs, rank: .ace),
+            faceUp: card != nil,
+            small: true,
+            style: .mini
+        )
     }
 }
 

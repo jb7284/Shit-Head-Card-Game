@@ -3,6 +3,7 @@ import SwiftUI
 struct FanHandView<CardGesture: Gesture>: View {
     let human: Player
     let isMyTurn: Bool
+    let openingCard: Card?
     let showHints: Bool
 
     @Binding var selectedCards: [Card]
@@ -50,6 +51,7 @@ struct FanHandView<CardGesture: Gesture>: View {
         let progress = metrics.progress(for: index)
         let angle = metrics.angle(for: progress)
         let yOffset = metrics.yOffset(for: progress)
+        let isOpening = openingCard == card
         let playable = isMyTurn && canPlay(card)
         let isSelected = selectedCards.contains(card)
         let isDragTarget = dragCardID == card.id
@@ -57,18 +59,19 @@ struct FanHandView<CardGesture: Gesture>: View {
         let convergenceX = isGroupedHand ? CGFloat(dragTargetHandIndex! - index) * metrics.xStep : 0
 
         let hintNudge: CGFloat = (showHints && playable && !isSelected) ? -8 * gs : 0
+        let openingNudge: CGFloat = isOpening ? -18 * gs : 0
 
         return CardView(
             card: card,
             faceUp: true,
-            highlight: showHints && playable && !isSelected,
+            highlight: isOpening || (showHints && playable && !isSelected),
             selected: isSelected,
-            dimmed: !isMyTurn
+            dimmed: isMyTurn && openingCard != nil && !isOpening
         )
         .reportCardFrame(card.uid)
         .hideIfInFlight(card.uid)
         .rotationEffect(.degrees((isDragTarget || isGroupedHand) ? 0 : angle), anchor: .bottom)
-        .offset(y: (isDragTarget || isGroupedHand) ? 0 : yOffset + hintNudge)
+        .offset(y: (isDragTarget || isGroupedHand) ? 0 : yOffset + hintNudge + openingNudge)
         .position(
             x: metrics.startX + CGFloat(index) * metrics.xStep + metrics.cardWidth / 2,
             y: height / 2
@@ -103,12 +106,15 @@ private struct FanMetrics {
 
     var cardWidth: CGFloat { 56 * scale }
 
+    private var maxFanWidth: CGFloat { availableWidth * 0.75 }
+
     var maxSpread: Double {
         min(Double(cardCount - 1) * 4.0, 28)
     }
 
     var totalFanWidth: CGFloat {
-        min(availableWidth, CGFloat(cardCount) * 32)
+        let natural = CGFloat(cardCount) * 32
+        return min(natural, maxFanWidth)
     }
 
     var xStep: CGFloat {

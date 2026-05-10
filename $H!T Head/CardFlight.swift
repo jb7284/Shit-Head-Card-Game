@@ -24,6 +24,13 @@ struct HandCenterPreferenceKey: PreferenceKey {
     }
 }
 
+struct DrawPileFramePreferenceKey: PreferenceKey {
+    static var defaultValue: [String: CGRect] = [:]
+    static func reduce(value: inout [String: CGRect], nextValue: () -> [String: CGRect]) {
+        value.merge(nextValue()) { _, new in new }
+    }
+}
+
 extension View {
     func reportCardFrame(_ id: UUID) -> some View {
         background(
@@ -52,6 +59,17 @@ extension View {
             GeometryReader { geo in
                 Color.clear.preference(
                     key: HandCenterPreferenceKey.self,
+                    value: [playerID: geo.frame(in: .named(gameCoordinateSpace))]
+                )
+            }
+        )
+    }
+
+    func reportDrawPileFrame(_ playerID: String) -> some View {
+        background(
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: DrawPileFramePreferenceKey.self,
                     value: [playerID: geo.frame(in: .named(gameCoordinateSpace))]
                 )
             }
