@@ -92,9 +92,9 @@ struct Deck {
                     cards.append(Card(suit: suit, rank: rank))
                 }
             }
-            for suit in Suit.allCases {
-                cards.append(Card(suit: suit, rank: .joker))
-            }
+        }
+        for suit in Suit.allCases {
+            cards.append(Card(suit: suit, rank: .joker))
         }
         return Deck(cards: cards.shuffled())
     }

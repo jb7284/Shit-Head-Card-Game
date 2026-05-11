@@ -32,9 +32,10 @@ enum GameDealer {
             ("Jake", "avatar_jake"),
         ]
 
+        let shuffled = aiCharacters.shuffled()
         var players = [Player(id: "human", name: "You", avatar: "", isAI: false)]
         for index in 0..<(count - 1) {
-            let character = aiCharacters[index]
+            let character = shuffled[index]
             players.append(Player(id: "ai\(index)", name: character.name, avatar: character.avatar, isAI: true))
         }
         return players
