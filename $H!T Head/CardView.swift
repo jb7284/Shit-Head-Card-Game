@@ -68,7 +68,7 @@ struct CardView: View {
 
     private var suitColor: Color {
         if card.isJoker {
-            return Color(red: 0.55, green: 0.0, blue: 0.55)
+            return Color(red: 0.80, green: 0.62, blue: 0.15)
         }
         return card.suit == .hearts || card.suit == .diamonds
             ? Color(red: 0.72, green: 0.04, blue: 0.05)
@@ -145,8 +145,7 @@ struct CardView: View {
     private var centerPips: some View {
         if card.isJoker {
             VStack(spacing: 2 * gs) {
-                Text("\u{1F0CF}")
-                    .font(.system(size: 28 * gs))
+                GoldJokerIcon(scale: gs)
                 Text("JOKER")
                     .font(.system(size: 10 * gs, weight: .black, design: .serif))
                     .foregroundStyle(suitColor)
@@ -272,9 +271,11 @@ struct CardView: View {
 
     // MARK: - Dynamic Styles
 
+    private static let goldSelection = Color(red: 0.90, green: 0.72, blue: 0.20)
+
     private var borderColor: Color {
-        if selected { return .green }
-        if highlight { return Color.yellow }
+        if selected { return Self.goldSelection }
+        if highlight { return Self.goldSelection.opacity(0.7) }
         return .clear
     }
 
@@ -285,8 +286,8 @@ struct CardView: View {
     }
 
     private var shadowColor: Color {
-        if selected { return .green.opacity(0.45) }
-        if highlight { return .yellow.opacity(0.3) }
+        if selected { return Self.goldSelection.opacity(0.5) }
+        if highlight { return Self.goldSelection.opacity(0.3) }
         if style == .opponent { return .black.opacity(0.55) }
         return .black.opacity(0.32)
     }
@@ -308,13 +309,11 @@ struct CardView: View {
 enum CardViewStyle {
     case standard
     case opponent
-    case mini
 
     func width(small: Bool) -> CGFloat {
         switch self {
         case .standard: return small ? 38 : 58
         case .opponent: return 30
-        case .mini: return 24
         }
     }
 
@@ -322,7 +321,6 @@ enum CardViewStyle {
         switch self {
         case .standard: return small ? 54 : 82
         case .opponent: return 40
-        case .mini: return 18
         }
     }
 
@@ -330,7 +328,6 @@ enum CardViewStyle {
         switch self {
         case .standard: return small ? 5 : 7
         case .opponent: return 4
-        case .mini: return 3
         }
     }
 }
@@ -462,6 +459,162 @@ struct PileLandingZone: View {
                     .opacity(isTop ? 1 : 0.85)
             }
         }
+    }
+}
+
+// MARK: - Gold Joker Icon
+
+struct GoldJokerIcon: View {
+    let scale: CGFloat
+
+    private var goldGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(red: 1.0, green: 0.90, blue: 0.40),
+                Color(red: 0.85, green: 0.65, blue: 0.15),
+                Color(red: 1.0, green: 0.85, blue: 0.35)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    var body: some View {
+        let size = 36 * scale
+        Canvas { context, canvasSize in
+            let midX = canvasSize.width / 2
+            let midY = canvasSize.height / 2
+
+            let headRadius = size * 0.22
+            let headCenter = CGPoint(x: midX, y: midY - size * 0.05)
+            context.fill(
+                Path(ellipseIn: CGRect(
+                    x: headCenter.x - headRadius,
+                    y: headCenter.y - headRadius,
+                    width: headRadius * 2,
+                    height: headRadius * 2
+                )),
+                with: .linearGradient(
+                    Gradient(colors: [
+                        Color(red: 1.0, green: 0.90, blue: 0.40),
+                        Color(red: 0.85, green: 0.65, blue: 0.15)
+                    ]),
+                    startPoint: CGPoint(x: midX, y: midY - size * 0.3),
+                    endPoint: CGPoint(x: midX, y: midY + size * 0.2)
+                )
+            )
+
+            let eyeY = headCenter.y - size * 0.02
+            let eyeSpacing = size * 0.08
+            let eyeSize = size * 0.04
+            for xOff in [-eyeSpacing, eyeSpacing] {
+                context.fill(
+                    Path(ellipseIn: CGRect(
+                        x: midX + xOff - eyeSize / 2,
+                        y: eyeY - eyeSize / 2,
+                        width: eyeSize,
+                        height: eyeSize
+                    )),
+                    with: .color(Color(red: 0.4, green: 0.25, blue: 0.05))
+                )
+            }
+
+            var smile = Path()
+            let smileY = headCenter.y + size * 0.06
+            smile.move(to: CGPoint(x: midX - size * 0.07, y: smileY))
+            smile.addQuadCurve(
+                to: CGPoint(x: midX + size * 0.07, y: smileY),
+                control: CGPoint(x: midX, y: smileY + size * 0.06)
+            )
+            context.stroke(
+                smile,
+                with: .color(Color(red: 0.4, green: 0.25, blue: 0.05)),
+                lineWidth: 1.2 * scale
+            )
+
+            let hatTop = headCenter.y - headRadius
+            let bellSize = size * 0.06
+            let hatPoints: [(dx: CGFloat, dy: CGFloat)] = [
+                (-0.25, -0.08), (0.0, -0.28), (0.25, -0.08)
+            ]
+
+            for pt in hatPoints {
+                var prong = Path()
+                let tipX = midX + size * pt.dx
+                let tipY = hatTop + size * pt.dy
+                let baseSpread = size * 0.06
+
+                prong.move(to: CGPoint(x: midX + size * pt.dx * 0.3, y: hatTop))
+                prong.addQuadCurve(
+                    to: CGPoint(x: tipX, y: tipY),
+                    control: CGPoint(x: tipX - baseSpread, y: hatTop + (tipY - hatTop) * 0.5)
+                )
+                prong.addQuadCurve(
+                    to: CGPoint(x: midX + size * pt.dx * 0.6, y: hatTop + size * 0.02),
+                    control: CGPoint(x: tipX + baseSpread, y: hatTop + (tipY - hatTop) * 0.5)
+                )
+                prong.closeSubpath()
+
+                context.fill(
+                    prong,
+                    with: .linearGradient(
+                        Gradient(colors: [
+                            Color(red: 1.0, green: 0.92, blue: 0.45),
+                            Color(red: 0.90, green: 0.68, blue: 0.18)
+                        ]),
+                        startPoint: CGPoint(x: midX, y: hatTop - size * 0.3),
+                        endPoint: CGPoint(x: midX, y: hatTop)
+                    )
+                )
+
+                context.fill(
+                    Path(ellipseIn: CGRect(
+                        x: tipX - bellSize / 2,
+                        y: tipY - bellSize / 2,
+                        width: bellSize,
+                        height: bellSize
+                    )),
+                    with: .color(Color(red: 1.0, green: 0.85, blue: 0.25))
+                )
+                context.stroke(
+                    Path(ellipseIn: CGRect(
+                        x: tipX - bellSize / 2,
+                        y: tipY - bellSize / 2,
+                        width: bellSize,
+                        height: bellSize
+                    )),
+                    with: .color(Color(red: 0.7, green: 0.50, blue: 0.10)),
+                    lineWidth: 0.6 * scale
+                )
+            }
+
+            let collarY = headCenter.y + headRadius - size * 0.02
+            var collar = Path()
+            let points = 5
+            for i in 0...points {
+                let progress = CGFloat(i) / CGFloat(points)
+                let x = midX - size * 0.28 + progress * size * 0.56
+                let peak = i.isMultiple(of: 2) ? collarY + size * 0.1 : collarY
+                if i == 0 {
+                    collar.move(to: CGPoint(x: x, y: peak))
+                } else {
+                    collar.addLine(to: CGPoint(x: x, y: peak))
+                }
+            }
+            context.stroke(
+                collar,
+                with: .linearGradient(
+                    Gradient(colors: [
+                        Color(red: 1.0, green: 0.90, blue: 0.40),
+                        Color(red: 0.80, green: 0.58, blue: 0.12)
+                    ]),
+                    startPoint: CGPoint(x: midX - size * 0.3, y: collarY),
+                    endPoint: CGPoint(x: midX + size * 0.3, y: collarY)
+                ),
+                lineWidth: 1.5 * scale
+            )
+        }
+        .frame(width: size, height: size)
     }
 }
 

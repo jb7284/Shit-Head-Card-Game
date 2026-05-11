@@ -36,9 +36,9 @@ struct FanHandView<CardGesture: Gesture>: View {
                     )
                 }
             }
-            .reportHandCenter(human.id)
         }
         .frame(height: 105 * gs)
+        .reportHandCenter(human.id)
     }
 
     private func handCard(
@@ -56,7 +56,10 @@ struct FanHandView<CardGesture: Gesture>: View {
         let isSelected = selectedCards.contains(card)
         let isDragTarget = dragCardID == card.id
         let isGroupedHand = isSelected && !isDragTarget && dragTargetHandIndex != nil
-        let convergenceX = isGroupedHand ? CGFloat(dragTargetHandIndex! - index) * metrics.xStep : 0
+        let convergenceX: CGFloat = {
+            guard isGroupedHand, let target = dragTargetHandIndex else { return 0 }
+            return CGFloat(target - index) * metrics.xStep
+        }()
 
         let hintNudge: CGFloat = (showHints && playable && !isSelected) ? -8 * gs : 0
         let openingNudge: CGFloat = isOpening ? -18 * gs : 0

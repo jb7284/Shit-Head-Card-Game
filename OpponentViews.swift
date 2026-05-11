@@ -22,6 +22,57 @@ struct AvatarView: View {
     }
 }
 
+// MARK: - Shared Opponent Identity
+
+private struct OpponentIdentityView: View {
+    let player: Player
+    let active: Bool
+    let isNext: Bool
+    let avatarSize: CGFloat
+
+    @Environment(\.gameScale) private var gs
+
+    var body: some View {
+        VStack(spacing: 2 * gs) {
+            AvatarView(avatar: player.avatar, size: avatarSize)
+            Text(player.name)
+                .font(.system(size: 12 * gs, weight: .bold))
+                .foregroundStyle(.white.opacity(active ? 0.9 : 0.5))
+            if !player.hasCards {
+                Text("OUT")
+                    .font(.system(size: 8 * gs, weight: .heavy))
+                    .foregroundStyle(.green)
+            }
+            if isNext && player.hasCards {
+                Text("Next")
+                    .font(.system(size: 8 * gs, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.3))
+            }
+        }
+    }
+}
+
+// MARK: - Skipped Overlay Modifier
+
+private struct SkippedOverlayModifier: ViewModifier {
+    let playerID: String
+    let skippedPlayerID: String?
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if skippedPlayerID == playerID {
+                SkippedBadge()
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.5).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+            }
+        }
+    }
+}
+
+// MARK: - Top Opponent
+
 struct TopOpponentView: View {
     let player: Player
     let active: Bool
@@ -33,7 +84,7 @@ struct TopOpponentView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8 * gs) {
-            opponentIdentity
+            OpponentIdentityView(player: player, active: active, isNext: isNext, avatarSize: 80 * gs)
 
             VStack(alignment: .leading, spacing: 4 * gs) {
                 OpponentHandFan(cards: player.hand, avatarSize: 80 * gs, playerID: player.id)
@@ -66,36 +117,11 @@ struct TopOpponentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: active)
-        .overlay {
-            if skippedPlayerID == player.id {
-                SkippedBadge()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.5).combined(with: .opacity),
-                        removal: .opacity
-                    ))
-            }
-        }
-    }
-
-    private var opponentIdentity: some View {
-        VStack(spacing: 2 * gs) {
-            AvatarView(avatar: player.avatar, size: 80 * gs)
-            Text(player.name)
-                .font(.system(size: 12 * gs, weight: .bold))
-                .foregroundStyle(.white.opacity(active ? 0.9 : 0.5))
-            if !player.hasCards {
-                Text("OUT")
-                    .font(.system(size: 8 * gs, weight: .heavy))
-                    .foregroundStyle(.green)
-            }
-            if isNext && player.hasCards {
-                Text("Next")
-                    .font(.system(size: 8 * gs, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.3))
-            }
-        }
+        .modifier(SkippedOverlayModifier(playerID: player.id, skippedPlayerID: skippedPlayerID))
     }
 }
+
+// MARK: - Side Opponent
 
 struct SideOpponentView: View {
     let player: Player
@@ -108,7 +134,7 @@ struct SideOpponentView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 8 * gs) {
-            opponentIdentity
+            OpponentIdentityView(player: player, active: active, isNext: isNext, avatarSize: 84 * gs)
 
             SideOpponentHandFan(cards: player.hand, avatarSize: 84 * gs, playerID: player.id)
                 .opacity(active ? 1.0 : 0.5)
@@ -117,34 +143,7 @@ struct SideOpponentView: View {
                 .opacity(active ? 1.0 : 0.5)
         }
         .animation(.easeInOut(duration: 0.3), value: active)
-        .overlay {
-            if skippedPlayerID == player.id {
-                SkippedBadge()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.5).combined(with: .opacity),
-                        removal: .opacity
-                    ))
-            }
-        }
-    }
-
-    private var opponentIdentity: some View {
-        VStack(spacing: 2 * gs) {
-            AvatarView(avatar: player.avatar, size: 84 * gs)
-            Text(player.name)
-                .font(.system(size: 12 * gs, weight: .bold))
-                .foregroundStyle(.white.opacity(active ? 0.9 : 0.5))
-            if !player.hasCards {
-                Text("OUT")
-                    .font(.system(size: 8 * gs, weight: .heavy))
-                    .foregroundStyle(.green)
-            }
-            if isNext && player.hasCards {
-                Text("Next")
-                    .font(.system(size: 8 * gs, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.3))
-            }
-        }
+        .modifier(SkippedOverlayModifier(playerID: player.id, skippedPlayerID: skippedPlayerID))
     }
 
     private var tableCards: some View {
@@ -174,6 +173,18 @@ struct SideOpponentView: View {
     }
 }
 
+// MARK: - Fan Overlap
+
+private func fanOverlap(cardCount: Int) -> CGFloat {
+    let n = cardCount
+    if n <= 6 { return 0.40 }
+    if n >= 15 { return 0.70 }
+    let t = CGFloat(n - 6) / 9
+    return 0.40 + (0.70 - 0.40) * t
+}
+
+// MARK: - Hand Fans
+
 struct OpponentHandFan: View {
     let cards: [Card]
     let avatarSize: CGFloat
@@ -183,20 +194,11 @@ struct OpponentHandFan: View {
 
     private var cardWidth: CGFloat { 30 * gs }
     private var cardHeight: CGFloat { 40 * gs }
-
-    private var baseOverlap: CGFloat {
-        let n = cards.count
-        if n <= 6 { return 0.40 }
-        if n >= 15 { return 0.70 }
-        let t = CGFloat(n - 6) / 9
-        return 0.40 + (0.70 - 0.40) * t
-    }
-
     private var widthCap: CGFloat { avatarSize * 2.5 }
 
     private var advance: CGFloat {
         guard cards.count > 1 else { return 0 }
-        let baseAdvance = cardWidth * (1 - baseOverlap)
+        let baseAdvance = cardWidth * (1 - fanOverlap(cardCount: cards.count))
         let baseTotal = cardWidth + baseAdvance * CGFloat(cards.count - 1)
         if baseTotal <= widthCap { return baseAdvance }
         return max(0, (widthCap - cardWidth) / CGFloat(cards.count - 1))
@@ -230,20 +232,11 @@ struct SideOpponentHandFan: View {
 
     private var cardWidth: CGFloat { 30 * gs }
     private var cardHeight: CGFloat { 40 * gs }
-
-    private var baseOverlap: CGFloat {
-        let n = cards.count
-        if n <= 6 { return 0.40 }
-        if n >= 15 { return 0.70 }
-        let t = CGFloat(n - 6) / 9
-        return 0.40 + (0.70 - 0.40) * t
-    }
-
     private var heightCap: CGFloat { avatarSize * 1.9 }
 
     private var advance: CGFloat {
         guard cards.count > 1 else { return 0 }
-        let baseAdvance = cardWidth * (1 - baseOverlap)
+        let baseAdvance = cardWidth * (1 - fanOverlap(cardCount: cards.count))
         let baseTotal = cardWidth + baseAdvance * CGFloat(cards.count - 1)
         if baseTotal <= heightCap { return baseAdvance }
         return max(0, (heightCap - cardWidth) / CGFloat(cards.count - 1))
@@ -269,6 +262,8 @@ struct SideOpponentHandFan: View {
     }
 }
 
+// MARK: - Card Views
+
 struct OpponentCardView: View {
     var card: Card? = nil
 
@@ -278,19 +273,6 @@ struct OpponentCardView: View {
             faceUp: card != nil,
             small: true,
             style: .opponent
-        )
-    }
-}
-
-struct MiniCardView: View {
-    var card: Card? = nil
-
-    var body: some View {
-        CardView(
-            card: card ?? Card(suit: .clubs, rank: .ace),
-            faceUp: card != nil,
-            small: true,
-            style: .mini
         )
     }
 }

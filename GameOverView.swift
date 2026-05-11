@@ -49,10 +49,16 @@ struct GameOverOverlay: View {
 
     private var loserSection: some View {
         VStack(spacing: 10) {
-            Text("\u{1F4A9}")
-                .font(.system(size: 80))
-                .scaleEffect(loserExiting ? 0.2 : (showLoser ? 1.0 : 3.0))
-                .opacity(loserExiting ? 0 : (showLoser ? 1 : 0))
+            ZStack {
+                Text("\u{1F4A9}")
+                    .font(.system(size: 80))
+
+                if showLoser && !loserExiting {
+                    FlySwarm()
+                }
+            }
+            .scaleEffect(loserExiting ? 0.2 : (showLoser ? 1.0 : 3.0))
+            .opacity(loserExiting ? 0 : (showLoser ? 1 : 0))
 
             Text(loser?.name ?? "Everyone")
                 .font(.system(size: 42, weight: .black, design: .serif))
@@ -60,9 +66,10 @@ struct GameOverOverlay: View {
                 .scaleEffect(loserExiting ? 0.4 : (showLoser ? 1.0 : 1.8))
                 .opacity(loserExiting ? 0 : (showLoser ? 1 : 0))
 
-            Text("is the $H!T HEAD!")
-                .font(.system(size: 22, weight: .heavy, design: .serif))
-                .foregroundStyle(.white.opacity(0.6))
+            Text("$ H ! T   H E A D")
+                .font(.system(size: 18, weight: .heavy))
+                .foregroundStyle(.white.opacity(0.5))
+                .tracking(4)
                 .scaleEffect(loserExiting ? 0.4 : (showLoser ? 1.0 : 1.5))
                 .opacity(loserExiting ? 0 : (showLoser ? 1 : 0))
         }
@@ -76,41 +83,52 @@ struct GameOverOverlay: View {
     @ViewBuilder
     private var winnerSection: some View {
         if let winner {
-            VStack(spacing: 6) {
+            VStack(spacing: 10) {
                 ZStack {
                     if confettiActive {
                         ConfettiBurst()
                     }
 
-                    Text("\u{1F451}")
-                        .font(.system(size: 50))
-                        .scaleEffect(showWinner ? 1.0 : 0.1)
-                        .rotationEffect(.degrees(showWinner ? 0 : -30))
-                        .animation(.spring(response: 0.6, dampingFraction: 0.45), value: showWinner)
+                    ZStack(alignment: .top) {
+                        Text("\u{1F4A9}")
+                            .font(.system(size: 90))
+                            .overlay(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 1.0, green: 0.90, blue: 0.45),
+                                        Color(red: 0.90, green: 0.72, blue: 0.20),
+                                        Color(red: 1.0, green: 0.85, blue: 0.35)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                                .mask(Text("\u{1F4A9}").font(.system(size: 90)))
+                            )
+                            .shadow(color: Color.orange.opacity(0.5), radius: 12, y: 3)
+
+                        Text("\u{1F451}")
+                            .font(.system(size: 44))
+                            .offset(y: -14)
+                    }
+                    .winnerShimmer(active: showWinner)
+                    .scaleEffect(showWinner ? 1.0 : 0.1)
+                    .rotationEffect(.degrees(showWinner ? 0 : -30))
+                    .animation(.spring(response: 0.6, dampingFraction: 0.45), value: showWinner)
                 }
 
-                Text(winner)
-                    .font(.system(size: 28, weight: .black, design: .serif))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 1.0, green: 0.85, blue: 0.3),
-                                Color(red: 1.0, green: 0.65, blue: 0.15)
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .shadow(color: .orange.opacity(0.4), radius: 8, y: 2)
-                    .offset(y: showWinner ? 0 : 30)
-                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: showWinner)
+                GoldShimmerText(
+                    text: winner,
+                    font: .system(size: 38, weight: .black, design: .serif)
+                )
+                .offset(y: showWinner ? 0 : 30)
+                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: showWinner)
 
-                Text("W I N N E R")
-                    .font(.system(size: 12, weight: .heavy))
-                    .foregroundStyle(.yellow.opacity(0.5))
-                    .tracking(4)
-                    .opacity(showWinner ? 1 : 0)
-                    .animation(.easeOut(duration: 0.4).delay(0.5), value: showWinner)
+                GoldShimmerText(
+                    text: "W I N N E R",
+                    font: .system(size: 18, weight: .heavy)
+                )
+                .opacity(showWinner ? 1 : 0)
+                .animation(.easeOut(duration: 0.4).delay(0.5), value: showWinner)
             }
         }
     }
@@ -153,6 +171,85 @@ struct GameOverOverlay: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
             showButton = true
         }
+    }
+}
+
+// MARK: - Fly Swarm
+
+struct FlySwarm: View {
+    private let flies: [FlyPath] = (0..<6).map { _ in FlyPath() }
+
+    var body: some View {
+        ZStack {
+            ForEach(flies) { fly in
+                FlyView(fly: fly)
+            }
+        }
+    }
+}
+
+private struct FlyView: View {
+    let fly: FlyPath
+    @State private var phase: CGFloat = 0
+
+    var body: some View {
+        Text("\u{1FAB0}")
+            .font(.system(size: fly.size))
+            .opacity(0.85)
+            .modifier(FlyMotion(fly: fly, phase: phase))
+            .onAppear {
+                withAnimation(
+                    .linear(duration: fly.loopDuration)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    phase = 1
+                }
+            }
+    }
+}
+
+private struct FlyMotion: Animatable, ViewModifier {
+    let fly: FlyPath
+    var phase: CGFloat
+
+    var animatableData: CGFloat {
+        get { phase }
+        set { phase = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        let angle = phase * .pi * 2 * fly.loops
+        let radiusX = fly.radiusX + sin(angle * 1.7) * fly.wobble
+        let radiusY = fly.radiusY + cos(angle * 1.3) * fly.wobble
+        let x = cos(angle + fly.startAngle) * radiusX
+        let y = sin(angle + fly.startAngle) * radiusY + fly.verticalDrift * phase
+
+        content
+            .offset(x: x, y: y)
+            .scaleEffect(x: cos(angle) > 0 ? 1 : -1, y: 1)
+    }
+}
+
+private struct FlyPath: Identifiable {
+    let id = UUID()
+    let size: CGFloat
+    let radiusX: CGFloat
+    let radiusY: CGFloat
+    let wobble: CGFloat
+    let startAngle: CGFloat
+    let loops: CGFloat
+    let loopDuration: Double
+    let verticalDrift: CGFloat
+
+    init() {
+        size = CGFloat.random(in: 14...22)
+        radiusX = CGFloat.random(in: 35...80)
+        radiusY = CGFloat.random(in: 25...55)
+        wobble = CGFloat.random(in: 5...15)
+        startAngle = CGFloat.random(in: 0...(2 * .pi))
+        loops = CGFloat.random(in: 2...4)
+        loopDuration = Double.random(in: 2.0...3.5)
+        verticalDrift = CGFloat.random(in: -15...15)
     }
 }
 
@@ -247,7 +344,7 @@ struct JokerTargetPicker: View {
                     ForEach(Array(players.enumerated()), id: \.element.id) { index, player in
                         if index != jokerPlayerIndex && player.hasCards {
                             Button {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                withAnimation(GameTheme.snappySpring) {
                                     onSelect(index)
                                 }
                             } label: {
@@ -280,5 +377,46 @@ struct JokerTargetPicker: View {
                 .padding(.horizontal, 40)
             }
         }
+    }
+}
+
+// MARK: - Winner Shimmer Modifier
+
+private struct WinnerShimmerModifier: ViewModifier {
+    let active: Bool
+    @State private var phase: CGFloat = -1
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                GeometryReader { geo in
+                    let shimmerWidth = geo.size.width * 0.4
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0), location: 0),
+                            .init(color: .white.opacity(0.4), location: 0.5),
+                            .init(color: .white.opacity(0), location: 1)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: shimmerWidth)
+                    .offset(x: phase * (geo.size.width + shimmerWidth) - shimmerWidth)
+                }
+                .blendMode(.sourceAtop)
+                .opacity(active ? 1 : 0)
+            )
+            .compositingGroup()
+            .onAppear {
+                withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+                    phase = 1
+                }
+            }
+    }
+}
+
+extension View {
+    func winnerShimmer(active: Bool) -> some View {
+        modifier(WinnerShimmerModifier(active: active))
     }
 }

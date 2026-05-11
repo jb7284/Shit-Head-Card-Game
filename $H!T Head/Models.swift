@@ -144,6 +144,22 @@ struct Player: Identifiable {
         if !faceUp.isEmpty { return .faceUp }
         return .faceDown
     }
+
+    func cards(in zone: CardZone) -> [Card] {
+        switch zone {
+        case .hand: return hand
+        case .faceUp: return faceUp
+        case .faceDown: return faceDown
+        }
+    }
+
+    mutating func setCards(_ cards: [Card], in zone: CardZone) {
+        switch zone {
+        case .hand: hand = cards
+        case .faceUp: faceUp = cards
+        case .faceDown: faceDown = cards
+        }
+    }
 }
 
 enum CardZone {
@@ -164,8 +180,8 @@ enum Difficulty: CaseIterable {
 
     var label: String {
         switch self {
-        case .easy: return "Easy"
-        case .medium: return "Medium"
+        case .easy: return "Beginner"
+        case .medium: return "Normal"
         case .expert: return "Expert"
         }
     }

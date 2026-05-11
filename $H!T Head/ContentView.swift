@@ -117,10 +117,10 @@ struct ContentView: View {
             }
         }
         .overlay {
-            if engine.pendingJokerPlayerIndex != nil {
+            if let jokerIndex = engine.pendingJokerPlayerIndex, !engine.state.players[jokerIndex].isAI {
                 JokerTargetPicker(
                     players: engine.state.players,
-                    jokerPlayerIndex: engine.pendingJokerPlayerIndex!,
+                    jokerPlayerIndex: jokerIndex,
                     pileCount: effects.lastPileSnapshot.count,
                     onSelect: handleJokerTarget
                 )
@@ -245,7 +245,7 @@ struct ContentView: View {
         let tapped: SwapSelection = isFaceUp ? .faceUp(index) : .hand(index)
 
         guard let current = swapSelection else {
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+            withAnimation(GameTheme.quickSpring) {
                 swapSelection = tapped
             }
             return
@@ -259,7 +259,7 @@ struct ContentView: View {
             withAnimation(springAnim) { engine.swapCards(handIndex: h, faceUpIndex: f) }
             swapSelection = nil
         default:
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+            withAnimation(GameTheme.quickSpring) {
                 swapSelection = current == tapped ? nil : tapped
             }
         }
@@ -267,15 +267,23 @@ struct ContentView: View {
 
     // MARK: - Play Actions
 
-    private func pickUpPile() {
-        selectedCards.removeAll()
+    private typealias Snapshot = FlightOrchestrator.StateSnapshot
+
+    private func animateAction(
+        _ action: () -> Void,
+        after: ((_ pre: Snapshot, _ post: Snapshot) -> Void)? = nil
+    ) {
         effects.prepareForAction(savingPileFrom: engine)
         let pre = flights.snapshot(from: engine)
-        withAnimation(springAnim) {
-            engine.pickUpPile()
-        }
+        withAnimation(springAnim) { action() }
         let post = flights.snapshot(from: engine)
         flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
+        after?(pre, post)
+    }
+
+    private func pickUpPile() {
+        selectedCards.removeAll()
+        animateAction { engine.pickUpPile() }
         effects.triggerHaptic(.levelChange)
         triggerAI()
     }
@@ -289,14 +297,11 @@ struct ContentView: View {
             try? await Task.sleep(for: .seconds(1.2))
 
             effects.revealedFaceDownIndex = nil
-            effects.prepareForAction(savingPileFrom: engine)
-            let pre = flights.snapshot(from: engine)
-            withAnimation(springAnim) {
+            animateAction {
                 engine.playFaceDownAt(index: index)
+            } after: { pre, post in
+                effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
             }
-            let post = flights.snapshot(from: engine)
-            flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
-            effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
             if engine.lastEvent == .failedFlip {
                 effects.triggerHaptic(.levelChange)
             }
@@ -305,29 +310,20 @@ struct ContentView: View {
     }
 
     private func playSelectedCards() {
-        effects.prepareForAction(savingPileFrom: engine)
-        let pre = flights.snapshot(from: engine)
-        withAnimation(springAnim) {
+        animateAction {
             engine.playCards(selectedCards)
             selectedCards.removeAll()
+        } after: { pre, post in
+            effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
+            effects.scheduleDrawHaptic(pre: pre, post: post)
         }
-        let post = flights.snapshot(from: engine)
-        flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
-        effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
-        effects.scheduleDrawHaptic(pre: pre, post: post)
         triggerAI()
     }
 
     // MARK: - Joker
 
     private func handleJokerTarget(_ targetIndex: Int) {
-        effects.prepareForAction(savingPileFrom: engine)
-        let pre = flights.snapshot(from: engine)
-        withAnimation(springAnim) {
-            engine.assignJokerPile(to: targetIndex)
-        }
-        let post = flights.snapshot(from: engine)
-        flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
+        animateAction { engine.assignJokerPile(to: targetIndex) }
         triggerAI()
     }
 
@@ -338,7 +334,7 @@ struct ContentView: View {
             effects.triggerRejectionFeedback(for: card, engine: engine)
             return
         }
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+        withAnimation(GameTheme.quickSpring) {
             toggleSelection(for: card)
         }
     }
@@ -361,7 +357,7 @@ struct ContentView: View {
             effects.triggerRejectionFeedback(for: card, engine: engine)
             return
         }
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+        withAnimation(GameTheme.quickSpring) {
             if !selectedCards.contains(card) {
                 selectOnlyCompatible(card)
             }
@@ -377,7 +373,7 @@ struct ContentView: View {
         if translation.height < -50 && !selectedCards.isEmpty {
             playSelectedCards()
         }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+        withAnimation(GameTheme.snappySpring) {
             dragOffset = .zero
             dragCardID = nil
         }
@@ -419,14 +415,11 @@ struct ContentView: View {
                   engine.state.currentPlayer.isAI
             else { return }
 
-            effects.prepareForAction(savingPileFrom: engine)
-            let pre = flights.snapshot(from: engine)
-            withAnimation(springAnim) {
+            animateAction {
                 engine.performAITurn()
+            } after: { pre, post in
+                effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
             }
-            let post = flights.snapshot(from: engine)
-            flights.spawnFlights(flights.computeFlights(pre: pre, post: post))
-            effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
 
             if let jokerIdx = engine.pendingJokerPlayerIndex, engine.state.players[jokerIdx].isAI {
                 let target = engine.bestJokerTarget(playerIndex: jokerIdx)

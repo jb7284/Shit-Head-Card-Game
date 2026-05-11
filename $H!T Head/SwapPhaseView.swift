@@ -35,12 +35,12 @@ struct SwapPhaseView: View {
 
     private var header: some View {
         VStack(spacing: 2) {
-            Text("SWAP PHASE")
-                .font(.system(size: 20, weight: .black, design: .serif))
-                .foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.5), radius: 4, y: 2)
-                .opacity(dealRevealed ? 1 : 0)
-                .animation(.easeOut.delay(0.4), value: dealRevealed)
+            GoldShimmerText(
+                text: "SWITCH CARDS",
+                font: .system(size: 20, weight: .black, design: .serif)
+            )
+            .opacity(dealRevealed ? 1 : 0)
+            .animation(.easeOut.delay(0.4), value: dealRevealed)
 
             Text("Drag or tap cards to swap between hand and table.")
                 .font(.caption)
@@ -168,7 +168,7 @@ struct SwapPhaseView: View {
                 if let target = findTarget(from: source, translation: value.translation) {
                     performSwap(source: source, target: target)
                 }
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                withAnimation(GameTheme.snappySpring) {
                     dragSource = nil
                     dragOffset = .zero
                 }
@@ -230,10 +230,11 @@ struct SwapPhaseView: View {
     }
 
     private func sectionLabel(_ title: String) -> some View {
-        Text(title)
-            .font(.system(size: 12, weight: .black, design: .serif))
-            .foregroundStyle(.white.opacity(0.5))
-            .opacity(dealRevealed ? 1 : 0)
+        GoldShimmerText(
+            text: title,
+            font: .system(size: 12, weight: .black, design: .serif)
+        )
+        .opacity(dealRevealed ? 1 : 0)
     }
 }
 

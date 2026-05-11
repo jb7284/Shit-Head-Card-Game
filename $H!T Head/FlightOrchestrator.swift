@@ -20,6 +20,17 @@ class FlightOrchestrator {
     struct StateSnapshot {
         let players: [Player]
         let pile: [Card]
+
+        var allCardIDs: Set<UUID> {
+            var ids = Set(pile.map { $0.uid })
+            for p in players {
+                ids.formUnion(p.hand.map { $0.uid })
+                ids.formUnion(p.faceUp.map { $0.uid })
+                ids.formUnion(p.faceDown.map { $0.uid })
+                ids.formUnion(p.drawPile.map { $0.uid })
+            }
+            return ids
+        }
     }
 
     func snapshot(from engine: GameEngine) -> StateSnapshot {
@@ -63,14 +74,7 @@ class FlightOrchestrator {
 
         let postPileSet = Set(post.pile.map { $0.uid })
         let prePileSet = Set(pre.pile.map { $0.uid })
-
-        var allPostIDs = Set(post.pile.map { $0.uid })
-        for p in post.players {
-            allPostIDs.formUnion(p.hand.map { $0.uid })
-            allPostIDs.formUnion(p.faceUp.map { $0.uid })
-            allPostIDs.formUnion(p.faceDown.map { $0.uid })
-            allPostIDs.formUnion(p.drawPile.map { $0.uid })
-        }
+        let allPostIDs = post.allCardIDs
 
         for (playerIndex, postPlayer) in post.players.enumerated() {
             guard playerIndex < pre.players.count else { continue }

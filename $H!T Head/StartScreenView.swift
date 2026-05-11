@@ -118,7 +118,7 @@ struct StartScreenView: View {
                 ForEach(Difficulty.allCases, id: \.self) { level in
                     SelectionChip(
                         isSelected: difficulty == level,
-                        width: 72,
+                        width: 80,
                         height: 36,
                         selectedScale: 1.05
                     ) {

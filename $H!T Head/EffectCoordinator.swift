@@ -56,7 +56,7 @@ class EffectCoordinator {
             SoundManager.play(.skipped)
         case .reverse:
             reverseDirection = playDirection
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            withAnimation(GameTheme.snappySpring) {
                 reverseEffect = true
             }
             SoundManager.play(.reverse)
@@ -73,24 +73,9 @@ class EffectCoordinator {
         lastEvent: GameEvent
     ) {
         guard lastEvent == .burn else { return }
-        var allPostIDs = Set(post.pile.map { $0.uid })
-        for p in post.players {
-            allPostIDs.formUnion(p.hand.map { $0.uid })
-            allPostIDs.formUnion(p.faceUp.map { $0.uid })
-            allPostIDs.formUnion(p.faceDown.map { $0.uid })
-            allPostIDs.formUnion(p.drawPile.map { $0.uid })
-        }
-        var playedCards: [Card] = []
-        for prePlayer in pre.players {
-            for card in prePlayer.hand {
-                if !allPostIDs.contains(card.uid) { playedCards.append(card) }
-            }
-            for card in prePlayer.faceUp {
-                if !allPostIDs.contains(card.uid) { playedCards.append(card) }
-            }
-            for card in prePlayer.faceDown {
-                if !allPostIDs.contains(card.uid) { playedCards.append(card) }
-            }
+        let allPostIDs = post.allCardIDs
+        let playedCards = pre.players.flatMap { player in
+            (player.hand + player.faceUp + player.faceDown).filter { !allPostIDs.contains($0.uid) }
         }
         pendingBurnPile = lastPileSnapshot + playedCards
     }
@@ -126,7 +111,7 @@ class EffectCoordinator {
 
     func showSkipped(playerID: String) {
         skippedTask?.cancel()
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+        withAnimation(GameTheme.snappySpring) {
             skippedPlayerID = playerID
         }
         skippedTask = Task { @MainActor [weak self] in
@@ -211,7 +196,7 @@ class EffectCoordinator {
     }
 
     private func triggerFourOfAKindEffect() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+        withAnimation(GameTheme.snappySpring) {
             fourOfAKindEffect = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { [weak self] in
