@@ -40,7 +40,8 @@ struct GameTableView: View {
                     active: isCurrentPlayer(opponentLayout.left),
                     isNext: isNextPlayer(opponentLayout.left),
                     turnPulse: turnPulse,
-                    skippedPlayerID: skippedPlayerID
+                    skippedPlayerID: skippedPlayerID,
+                    placement: .left
                 )
 
                 Spacer(minLength: 0)
@@ -74,7 +75,8 @@ struct GameTableView: View {
                     active: isCurrentPlayer(opponentLayout.right),
                     isNext: isNextPlayer(opponentLayout.right),
                     turnPulse: turnPulse,
-                    skippedPlayerID: skippedPlayerID
+                    skippedPlayerID: skippedPlayerID,
+                    placement: .right
                 )
                 .padding(.trailing, 20)
             }

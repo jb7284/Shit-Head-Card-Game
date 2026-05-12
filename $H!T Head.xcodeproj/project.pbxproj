@@ -11,9 +11,27 @@
 		5411EC1E2FAE59040000102F /* GameOverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC1D2FAE59040000102F /* GameOverView.swift */; };
 		5411EC202FAE59050000102F /* OpponentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC1F2FAE59050000102F /* OpponentViews.swift */; };
 		5411EC222FAE5AAC0000102F /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC212FAE5AAC0000102F /* SoundManager.swift */; };
+		547DE3002FB2F100007FA0D3 /* RulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC1B2FAE59040000102F /* RulesView.swift */; };
+		547DE3012FB2F100007FA0D3 /* GameOverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC1D2FAE59040000102F /* GameOverView.swift */; };
+		547DE3022FB2F100007FA0D3 /* OpponentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC1F2FAE59050000102F /* OpponentViews.swift */; };
+		547DE3032FB2F100007FA0D3 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5411EC212FAE5AAC0000102F /* SoundManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		547DE2142FB2E2FD007FA0D3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 54C4DD992FAD9FCA00A7415B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 547DE2062FB2E2FC007FA0D3;
+			remoteInfo = ShedHeadApp;
+		};
+		547DE21E2FB2E2FD007FA0D3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 54C4DD992FAD9FCA00A7415B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 547DE2062FB2E2FC007FA0D3;
+			remoteInfo = ShedHeadApp;
+		};
 		54C4DDAF2FAD9FCB00A7415B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 54C4DD992FAD9FCA00A7415B /* Project object */;
@@ -35,14 +53,45 @@
 		5411EC1D2FAE59040000102F /* GameOverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameOverView.swift; sourceTree = "<group>"; };
 		5411EC1F2FAE59050000102F /* OpponentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpponentViews.swift; sourceTree = "<group>"; };
 		5411EC212FAE5AAC0000102F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
+		547DE2072FB2E2FC007FA0D3 /* ShedHeadApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShedHeadApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		547DE2132FB2E2FD007FA0D3 /* ShedHeadAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShedHeadAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		547DE21D2FB2E2FD007FA0D3 /* ShedHeadAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShedHeadAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		54C4DDA12FAD9FCA00A7415B /* Shed Head.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Shed Head.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		54C4DDAE2FAD9FCB00A7415B /* Shed HeadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Shed HeadTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		54C4DDB82FAD9FCB00A7415B /* Shed HeadUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Shed HeadUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		547DE3042FB2F100007FA0D3 /* Exceptions for "Shed Head" folder in "ShedHeadApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				_H_T_HeadApp.swift,
+			);
+			target = 547DE2062FB2E2FC007FA0D3 /* ShedHeadApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		547DE2082FB2E2FC007FA0D3 /* ShedHeadApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ShedHeadApp;
+			sourceTree = "<group>";
+		};
+		547DE2162FB2E2FD007FA0D3 /* ShedHeadAppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ShedHeadAppTests;
+			sourceTree = "<group>";
+		};
+		547DE2202FB2E2FD007FA0D3 /* ShedHeadAppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ShedHeadAppUITests;
+			sourceTree = "<group>";
+		};
 		54C4DDA32FAD9FCA00A7415B /* Shed Head */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				547DE3042FB2F100007FA0D3 /* Exceptions for "Shed Head" folder in "ShedHeadApp" target */,
+			);
 			path = "Shed Head";
 			sourceTree = "<group>";
 		};
@@ -59,6 +108,27 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		547DE2042FB2E2FC007FA0D3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		547DE2102FB2E2FD007FA0D3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		547DE21A2FB2E2FD007FA0D3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		54C4DD9E2FAD9FCA00A7415B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -89,6 +159,9 @@
 				54C4DDA32FAD9FCA00A7415B /* Shed Head */,
 				54C4DDB12FAD9FCB00A7415B /* Shed HeadTests */,
 				54C4DDBB2FAD9FCB00A7415B /* Shed HeadUITests */,
+				547DE2082FB2E2FC007FA0D3 /* ShedHeadApp */,
+				547DE2162FB2E2FD007FA0D3 /* ShedHeadAppTests */,
+				547DE2202FB2E2FD007FA0D3 /* ShedHeadAppUITests */,
 				54C4DDA22FAD9FCA00A7415B /* Products */,
 				5411EC1B2FAE59040000102F /* RulesView.swift */,
 				5411EC1D2FAE59040000102F /* GameOverView.swift */,
@@ -103,6 +176,9 @@
 				54C4DDA12FAD9FCA00A7415B /* Shed Head.app */,
 				54C4DDAE2FAD9FCB00A7415B /* Shed HeadTests.xctest */,
 				54C4DDB82FAD9FCB00A7415B /* Shed HeadUITests.xctest */,
+				547DE2072FB2E2FC007FA0D3 /* ShedHeadApp.app */,
+				547DE2132FB2E2FD007FA0D3 /* ShedHeadAppTests.xctest */,
+				547DE21D2FB2E2FD007FA0D3 /* ShedHeadAppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -110,6 +186,75 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		547DE2062FB2E2FC007FA0D3 /* ShedHeadApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 547DE22B2FB2E2FD007FA0D3 /* Build configuration list for PBXNativeTarget "ShedHeadApp" */;
+			buildPhases = (
+				547DE2032FB2E2FC007FA0D3 /* Sources */,
+				547DE2042FB2E2FC007FA0D3 /* Frameworks */,
+				547DE2052FB2E2FC007FA0D3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				547DE2082FB2E2FC007FA0D3 /* ShedHeadApp */,
+				54C4DDA32FAD9FCA00A7415B /* Shed Head */,
+			);
+			name = ShedHeadApp;
+			packageProductDependencies = (
+			);
+			productName = ShedHeadApp;
+			productReference = 547DE2072FB2E2FC007FA0D3 /* ShedHeadApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		547DE2122FB2E2FD007FA0D3 /* ShedHeadAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 547DE22C2FB2E2FD007FA0D3 /* Build configuration list for PBXNativeTarget "ShedHeadAppTests" */;
+			buildPhases = (
+				547DE20F2FB2E2FD007FA0D3 /* Sources */,
+				547DE2102FB2E2FD007FA0D3 /* Frameworks */,
+				547DE2112FB2E2FD007FA0D3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				547DE2152FB2E2FD007FA0D3 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				547DE2162FB2E2FD007FA0D3 /* ShedHeadAppTests */,
+			);
+			name = ShedHeadAppTests;
+			packageProductDependencies = (
+			);
+			productName = ShedHeadAppTests;
+			productReference = 547DE2132FB2E2FD007FA0D3 /* ShedHeadAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		547DE21C2FB2E2FD007FA0D3 /* ShedHeadAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 547DE22D2FB2E2FD007FA0D3 /* Build configuration list for PBXNativeTarget "ShedHeadAppUITests" */;
+			buildPhases = (
+				547DE2192FB2E2FD007FA0D3 /* Sources */,
+				547DE21A2FB2E2FD007FA0D3 /* Frameworks */,
+				547DE21B2FB2E2FD007FA0D3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				547DE21F2FB2E2FD007FA0D3 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				547DE2202FB2E2FD007FA0D3 /* ShedHeadAppUITests */,
+			);
+			name = ShedHeadAppUITests;
+			packageProductDependencies = (
+			);
+			productName = ShedHeadAppUITests;
+			productReference = 547DE21D2FB2E2FD007FA0D3 /* ShedHeadAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		54C4DDA02FAD9FCA00A7415B /* Shed Head */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 54C4DDC22FAD9FCB00A7415B /* Build configuration list for PBXNativeTarget "Shed Head" */;
@@ -188,6 +333,17 @@
 				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
+					547DE2062FB2E2FC007FA0D3 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					547DE2122FB2E2FD007FA0D3 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 547DE2062FB2E2FC007FA0D3;
+					};
+					547DE21C2FB2E2FD007FA0D3 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 547DE2062FB2E2FC007FA0D3;
+					};
 					54C4DDA02FAD9FCA00A7415B = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
@@ -201,7 +357,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 54C4DD9C2FAD9FCA00A7415B /* Build configuration list for PBXProject "Shed Head" */;
+			buildConfigurationList = 54C4DD9C2FAD9FCA00A7415B /* Build configuration list for PBXProject "$H!T Head" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -218,11 +374,35 @@
 				54C4DDA02FAD9FCA00A7415B /* Shed Head */,
 				54C4DDAD2FAD9FCB00A7415B /* Shed HeadTests */,
 				54C4DDB72FAD9FCB00A7415B /* Shed HeadUITests */,
+				547DE2062FB2E2FC007FA0D3 /* ShedHeadApp */,
+				547DE2122FB2E2FD007FA0D3 /* ShedHeadAppTests */,
+				547DE21C2FB2E2FD007FA0D3 /* ShedHeadAppUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		547DE2052FB2E2FC007FA0D3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		547DE2112FB2E2FD007FA0D3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		547DE21B2FB2E2FD007FA0D3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		54C4DD9F2FAD9FCA00A7415B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -247,6 +427,31 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		547DE2032FB2E2FC007FA0D3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				547DE3012FB2F100007FA0D3 /* GameOverView.swift in Sources */,
+				547DE3002FB2F100007FA0D3 /* RulesView.swift in Sources */,
+				547DE3022FB2F100007FA0D3 /* OpponentViews.swift in Sources */,
+				547DE3032FB2F100007FA0D3 /* SoundManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		547DE20F2FB2E2FD007FA0D3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		547DE2192FB2E2FD007FA0D3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		54C4DD9D2FAD9FCA00A7415B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -275,6 +480,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		547DE2152FB2E2FD007FA0D3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 547DE2062FB2E2FC007FA0D3 /* ShedHeadApp */;
+			targetProxy = 547DE2142FB2E2FD007FA0D3 /* PBXContainerItemProxy */;
+		};
+		547DE21F2FB2E2FD007FA0D3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 547DE2062FB2E2FC007FA0D3 /* ShedHeadApp */;
+			targetProxy = 547DE21E2FB2E2FD007FA0D3 /* PBXContainerItemProxy */;
+		};
 		54C4DDB02FAD9FCB00A7415B /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 54C4DDA02FAD9FCA00A7415B /* Shed Head */;
@@ -288,6 +503,163 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		547DE2252FB2E2FD007FA0D3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6TQR2G6UST;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MarkWell.ShedHeadApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		547DE2262FB2E2FD007FA0D3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6TQR2G6UST;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MarkWell.ShedHeadApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		547DE2272FB2E2FD007FA0D3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MarkWell.ShedHeadAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ShedHeadApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ShedHeadApp";
+			};
+			name = Debug;
+		};
+		547DE2282FB2E2FD007FA0D3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MarkWell.ShedHeadAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ShedHeadApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ShedHeadApp";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		547DE2292FB2E2FD007FA0D3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MarkWell.ShedHeadAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ShedHeadApp;
+			};
+			name = Debug;
+		};
+		547DE22A2FB2E2FD007FA0D3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MarkWell.ShedHeadAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ShedHeadApp;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		54C4DDC02FAD9FCB00A7415B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -409,7 +781,7 @@
 		54C4DDC32FAD9FCB00A7415B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = MacAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -418,14 +790,14 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Shed Head";
+				INFOPLIST_KEY_CFBundleName = "Shed Head";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				INFOPLIST_KEY_CFBundleDisplayName = "Shed Head";
-				INFOPLIST_KEY_CFBundleName = "Shed Head";
 				PRODUCT_BUNDLE_IDENTIFIER = MarkWell.ShedHead;
 				PRODUCT_NAME = "Shed Head";
 				REGISTER_APP_GROUPS = YES;
@@ -441,7 +813,7 @@
 		54C4DDC42FAD9FCB00A7415B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = MacAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -450,14 +822,14 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Shed Head";
+				INFOPLIST_KEY_CFBundleName = "Shed Head";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				INFOPLIST_KEY_CFBundleDisplayName = "Shed Head";
-				INFOPLIST_KEY_CFBundleName = "Shed Head";
 				PRODUCT_BUNDLE_IDENTIFIER = MarkWell.ShedHead;
 				PRODUCT_NAME = "Shed Head";
 				REGISTER_APP_GROUPS = YES;
@@ -549,7 +921,34 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		54C4DD9C2FAD9FCA00A7415B /* Build configuration list for PBXProject "Shed Head" */ = {
+		547DE22B2FB2E2FD007FA0D3 /* Build configuration list for PBXNativeTarget "ShedHeadApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				547DE2252FB2E2FD007FA0D3 /* Debug */,
+				547DE2262FB2E2FD007FA0D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		547DE22C2FB2E2FD007FA0D3 /* Build configuration list for PBXNativeTarget "ShedHeadAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				547DE2272FB2E2FD007FA0D3 /* Debug */,
+				547DE2282FB2E2FD007FA0D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		547DE22D2FB2E2FD007FA0D3 /* Build configuration list for PBXNativeTarget "ShedHeadAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				547DE2292FB2E2FD007FA0D3 /* Debug */,
+				547DE22A2FB2E2FD007FA0D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		54C4DD9C2FAD9FCA00A7415B /* Build configuration list for PBXProject "$H!T Head" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				54C4DDC02FAD9FCB00A7415B /* Debug */,

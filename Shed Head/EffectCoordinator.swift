@@ -1,5 +1,14 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#elseif os(iOS)
+import UIKit
+#endif
+
+enum GameHaptic {
+    case levelChange
+    case alignment
+}
 
 @MainActor
 @Observable
@@ -130,9 +139,35 @@ class EffectCoordinator {
         }
     }
 
-    func triggerHaptic(_ pattern: NSHapticFeedbackManager.FeedbackPattern) {
-        NSHapticFeedbackManager.defaultPerformer.perform(pattern, performanceTime: .default)
+    func triggerHaptic(_ pattern: GameHaptic) {
+        #if os(macOS)
+        let macPattern: NSHapticFeedbackManager.FeedbackPattern
+        switch pattern {
+        case .levelChange:
+            macPattern = .levelChange
+        case .alignment:
+            macPattern = .alignment
+        }
+        NSHapticFeedbackManager.defaultPerformer.perform(macPattern, performanceTime: .default)
+        #elseif os(iOS)
+        switch pattern {
+        case .levelChange:
+            UISelectionFeedbackGenerator().selectionChanged()
+        case .alignment:
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+        #endif
     }
+
+    #if os(macOS)
+    private func performAlignmentHaptic() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+    }
+    #elseif os(iOS)
+    private func performAlignmentHaptic() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+    #endif
 
     func scheduleDrawHaptic(
         pre: FlightOrchestrator.StateSnapshot,
@@ -152,7 +187,7 @@ class EffectCoordinator {
         guard drew else { return }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+            self.performAlignmentHaptic()
         }
     }
 

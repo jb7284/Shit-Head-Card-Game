@@ -41,6 +41,7 @@ struct PlayerAreaView: View {
     var body: some View {
         VStack(spacing: 2) {
             tableCards
+                .modifier(InactiveHumanCardsModifier(active: isMyTurn))
             FanHandView(
                 human: human,
                 isMyTurn: isMyTurn,
@@ -59,6 +60,7 @@ struct PlayerAreaView: View {
             .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isMyTurn)
             .overlay { mustPickUpOverlay }
             .padding(.horizontal, 4)
+            .modifier(InactiveHumanCardsModifier(active: isMyTurn))
         }
         .padding(.vertical, 2)
         .padding(.horizontal, 4)
@@ -213,5 +215,16 @@ struct PlayerAreaView: View {
                 guard enabled else { return }
                 onDragEnd(value.translation)
             }
+    }
+}
+
+private struct InactiveHumanCardsModifier: ViewModifier {
+    let active: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .brightness(active ? 0 : -0.34)
+            .saturation(active ? 1 : 0.48)
+            .contrast(active ? 1 : 0.88)
     }
 }

@@ -137,27 +137,44 @@ struct TopOpponentView: View {
 
 // MARK: - Side Opponent
 
+enum SideOpponentPlacement {
+    case left
+    case right
+}
+
 struct SideOpponentView: View {
     let player: Player
     let active: Bool
     let isNext: Bool
     let turnPulse: Bool
     let skippedPlayerID: String?
+    let placement: SideOpponentPlacement
 
     @Environment(\.gameScale) private var gs
 
     var body: some View {
         HStack(alignment: .center, spacing: 8 * gs) {
-            OpponentIdentityView(player: player, active: active, isNext: isNext, avatarSize: 84 * gs)
-
-            SideOpponentHandFan(cards: player.hand, avatarSize: 84 * gs, playerID: player.id)
-                .modifier(InactiveOpponentCardsModifier(active: active))
-
-            tableCards
-                .modifier(InactiveOpponentCardsModifier(active: active))
+            if placement == .left {
+                identity
+                hand
+                tableCards
+            } else {
+                tableCards
+                hand
+                identity
+            }
         }
         .animation(.easeInOut(duration: 0.3), value: active)
         .modifier(SkippedOverlayModifier(playerID: player.id, skippedPlayerID: skippedPlayerID))
+    }
+
+    private var identity: some View {
+        OpponentIdentityView(player: player, active: active, isNext: isNext, avatarSize: 84 * gs)
+    }
+
+    private var hand: some View {
+        SideOpponentHandFan(cards: player.hand, avatarSize: 84 * gs, playerID: player.id)
+            .modifier(InactiveOpponentCardsModifier(active: active))
     }
 
     private var tableCards: some View {
@@ -173,7 +190,7 @@ struct SideOpponentView: View {
                         OpponentCardView(card: player.faceUp[i])
                             .reportCardFrame(player.faceUp[i].uid)
                             .hideIfInFlight(player.faceUp[i].uid)
-                            .offset(x: 8 * gs)
+                            .offset(x: (placement == .left ? 8 : -8) * gs)
                     }
                 }
             }
@@ -184,6 +201,7 @@ struct SideOpponentView: View {
                     .padding(.top, 4 * gs)
             }
         }
+        .modifier(InactiveOpponentCardsModifier(active: active))
     }
 }
 
