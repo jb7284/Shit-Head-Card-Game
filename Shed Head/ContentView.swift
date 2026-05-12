@@ -20,7 +20,8 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            FeltTableBackground()
+            Image(engine.state.phase == .playing || engine.state.phase == .finished ? "playing_background" : "table_background")
+                .resizable()
                 .ignoresSafeArea()
 
             GeometryReader { geo in

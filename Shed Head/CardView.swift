@@ -14,6 +14,7 @@ struct CardView: View {
     private var width: CGFloat { style.width(small: small) * gs }
     private var height: CGFloat { style.height(small: small) * gs }
     private var cornerRadius: CGFloat { style.cornerRadius(small: small) * gs }
+    private var faceInset: CGFloat { (small ? 2.5 : 4) * gs }
 
     var body: some View {
         ZStack {
@@ -30,10 +31,12 @@ struct CardView: View {
                 .stroke(borderColor, lineWidth: borderWidth)
         )
         .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowY)
-        .opacity(dimmed ? 0.5 : 1)
+        .brightness(dimmed ? -0.22 : 0)
+        .saturation(dimmed ? 0.55 : 1)
         .offset(y: selected ? -14 * gs : 0)
         .scaleEffect(selected ? 1.08 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.65), value: selected)
+        .animation(.easeInOut(duration: 0.2), value: dimmed)
     }
 
     // MARK: - Card Face
@@ -44,8 +47,9 @@ struct CardView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 1.0, green: 0.98, blue: 0.92),
-                            Color(red: 0.96, green: 0.93, blue: 0.86)
+                            Color(red: 1.0, green: 0.995, blue: 0.965),
+                            Color(red: 0.98, green: 0.955, blue: 0.89),
+                            Color(red: 0.93, green: 0.89, blue: 0.80)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -54,9 +58,25 @@ struct CardView: View {
 
             cardPaperTexture
 
-            RoundedRectangle(cornerRadius: cornerRadius - 1)
-                .stroke(Color.black.opacity(0.08), lineWidth: (small ? 0.5 : 0.7) * gs)
-                .padding((small ? 2 : 3) * gs)
+            RoundedRectangle(cornerRadius: max(cornerRadius - faceInset, 1))
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(0.28),
+                            .clear,
+                            Color.black.opacity(0.035)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .padding(faceInset)
+
+            faceBorder
+
+            if !small {
+                diagonalSheen
+            }
 
             if small {
                 smallFaceContent
@@ -110,7 +130,7 @@ struct CardView: View {
     private var cardPaperTexture: some View {
         Canvas { context, size in
             let speckColor = Color.black.opacity(0.025)
-            for index in 0..<18 {
+            for index in 0..<(small ? 16 : 36) {
                 let xSeed = CGFloat((index * 37) % 100) / 100
                 let ySeed = CGFloat((index * 61) % 100) / 100
                 let rect = CGRect(
@@ -123,6 +143,42 @@ struct CardView: View {
             }
         }
         .opacity(small ? 0.35 : 0.65)
+    }
+
+    private var faceBorder: some View {
+        RoundedRectangle(cornerRadius: max(cornerRadius - 1.5 * gs, 1))
+            .strokeBorder(
+                LinearGradient(
+                    colors: [
+                        .white.opacity(0.55),
+                        Color.black.opacity(0.10),
+                        .white.opacity(0.22)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: (small ? 0.75 : 1.1) * gs
+            )
+            .padding((small ? 2 : 3) * gs)
+            .overlay(
+                RoundedRectangle(cornerRadius: max(cornerRadius - 4 * gs, 1))
+                    .stroke(suitColor.opacity(0.12), lineWidth: (small ? 0.35 : 0.55) * gs)
+                    .padding((small ? 5 : 7) * gs)
+            )
+    }
+
+    private var diagonalSheen: some View {
+        LinearGradient(
+            colors: [
+                .white.opacity(0.24),
+                .white.opacity(0.06),
+                .clear
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .blendMode(.screen)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 
     private var cornerMark: some View {
@@ -144,22 +200,11 @@ struct CardView: View {
     @ViewBuilder
     private var centerPips: some View {
         if card.isJoker {
-            VStack(spacing: 2 * gs) {
-                GoldJokerIcon(scale: gs)
-                Text("JOKER")
-                    .font(.system(size: 10 * gs, weight: .black, design: .serif))
-                    .foregroundStyle(suitColor)
-            }
+            OrnamentalJokerMark(scale: gs, color: suitColor)
         } else if card.rank.rawValue <= Rank.ten.rawValue {
             pipLayout
         } else {
-            VStack(spacing: 2 * gs) {
-                Text(card.rank.label)
-                    .font(.system(size: 24 * gs, weight: .black, design: .serif))
-                Text(card.suit.character)
-                    .font(.system(size: 20 * gs, weight: .bold))
-            }
-            .foregroundStyle(suitColor)
+            RoyalCardCenter(card: card, suitColor: suitColor, scale: gs)
         }
     }
 
@@ -168,11 +213,8 @@ struct CardView: View {
             ForEach(pipRows.indices, id: \.self) { rowIndex in
                 HStack(spacing: 8 * gs) {
                     ForEach(0..<pipRows[rowIndex], id: \.self) { _ in
-                        Text(card.suit.character)
-                            .font(.system(size: pipFontSize * gs, weight: .bold))
-                            .foregroundStyle(suitColor.opacity(0.9))
+                        SuitPip(suit: card.suit, color: suitColor, size: pipFontSize * gs)
                     }
-
                 }
                 .rotationEffect(rowIndex > pipRows.count / 2 ? .degrees(180) : .zero)
             }
@@ -207,52 +249,51 @@ struct CardView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.55, green: 0.42, blue: 0.18),
-                            Color(red: 0.40, green: 0.30, blue: 0.12)
+                            Color(red: 0.68, green: 0.53, blue: 0.22),
+                            Color(red: 0.39, green: 0.28, blue: 0.10),
+                            Color(red: 0.18, green: 0.12, blue: 0.05)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
 
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 1.0, green: 0.82, blue: 0.36).opacity(0.22),
+                            .clear
+                        ],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: height * 0.9
+                    )
+                )
+
             RoundedRectangle(cornerRadius: cornerRadius - 1)
-                .stroke(Color(red: 0.78, green: 0.66, blue: 0.34).opacity(0.4), lineWidth: (small ? 0.7 : 1) * gs)
+                .stroke(Color(red: 0.92, green: 0.76, blue: 0.36).opacity(0.55), lineWidth: (small ? 0.8 : 1.2) * gs)
                 .padding(3 * gs)
 
             Canvas { context, size in
-                let step: CGFloat = small ? 6 : 8
-                let color = Color(red: 0.78, green: 0.66, blue: 0.34).opacity(0.12)
+                let step: CGFloat = small ? 5 : 7
+                let color = Color(red: 0.95, green: 0.78, blue: 0.36).opacity(0.13)
                 for x in stride(from: -size.height, through: size.width + size.height, by: step) {
                     var downStroke = Path()
                     downStroke.move(to: CGPoint(x: x, y: 0))
                     downStroke.addLine(to: CGPoint(x: x - size.height, y: size.height))
-                    context.stroke(downStroke, with: .color(color), lineWidth: 0.45)
+                    context.stroke(downStroke, with: .color(color), lineWidth: 0.55 * gs)
 
                     var upStroke = Path()
                     upStroke.move(to: CGPoint(x: x, y: 0))
                     upStroke.addLine(to: CGPoint(x: x + size.height, y: size.height))
-                    context.stroke(upStroke, with: .color(color), lineWidth: 0.45)
+                    context.stroke(upStroke, with: .color(color), lineWidth: 0.55 * gs)
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius - 2))
             .padding(5 * gs)
 
-            if !small {
-                ZStack {
-                    DiamondShape()
-                        .fill(Color(red: 0.78, green: 0.66, blue: 0.34).opacity(0.15))
-                        .frame(width: 25 * gs, height: 34 * gs)
-                    DiamondShape()
-                        .stroke(Color(red: 0.78, green: 0.66, blue: 0.34).opacity(0.30), lineWidth: 0.9)
-                        .frame(width: 25 * gs, height: 34 * gs)
-                    DiamondShape()
-                        .fill(Color(red: 0.85, green: 0.72, blue: 0.38).opacity(0.25))
-                        .frame(width: 13 * gs, height: 18 * gs)
-                    Text("$")
-                        .font(.system(size: 13 * gs, weight: .black, design: .serif))
-                        .foregroundStyle(Color(red: 0.95, green: 0.85, blue: 0.55).opacity(0.4))
-                }
-            }
+            cardBackMonogram
 
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(
@@ -266,6 +307,28 @@ struct CardView: View {
                     ),
                     lineWidth: 0.5
                 )
+        }
+    }
+
+    private var cardBackMonogram: some View {
+        let markScale = width / (58 * gs)
+
+        return ZStack {
+            RoundedRectangle(cornerRadius: 8 * markScale * gs)
+                .stroke(Color(red: 0.95, green: 0.78, blue: 0.36).opacity(0.24), lineWidth: 0.9 * markScale * gs)
+                .frame(width: 34 * markScale * gs, height: 48 * markScale * gs)
+            DiamondShape()
+                .fill(Color(red: 0.90, green: 0.72, blue: 0.30).opacity(0.18))
+                .frame(width: 25 * markScale * gs, height: 34 * markScale * gs)
+            DiamondShape()
+                .stroke(Color(red: 0.98, green: 0.82, blue: 0.42).opacity(0.38), lineWidth: 0.9 * markScale * gs)
+                .frame(width: 25 * markScale * gs, height: 34 * markScale * gs)
+            DiamondShape()
+                .fill(Color(red: 1.0, green: 0.80, blue: 0.34).opacity(0.28))
+                .frame(width: 13 * markScale * gs, height: 18 * markScale * gs)
+            Text("SH")
+                .font(.system(size: 10 * markScale * gs, weight: .black, design: .serif))
+                .foregroundStyle(Color(red: 1.0, green: 0.86, blue: 0.48).opacity(0.58))
         }
     }
 
@@ -462,159 +525,145 @@ struct PileLandingZone: View {
     }
 }
 
-// MARK: - Gold Joker Icon
+// MARK: - Card Details
 
-struct GoldJokerIcon: View {
+private struct OrnamentalJokerMark: View {
     let scale: CGFloat
+    let color: Color
 
-    private var goldGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 1.0, green: 0.90, blue: 0.40),
-                Color(red: 0.85, green: 0.65, blue: 0.15),
-                Color(red: 1.0, green: 0.85, blue: 0.35)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+    private var gold: Color {
+        Color(red: 0.86, green: 0.62, blue: 0.18)
     }
 
     var body: some View {
-        let size = 36 * scale
-        Canvas { context, canvasSize in
-            let midX = canvasSize.width / 2
-            let midY = canvasSize.height / 2
+        VStack(spacing: 3 * scale) {
+            Text("JOKER")
+                .font(.system(size: 8.5 * scale, weight: .black, design: .serif))
+                .tracking(1.1 * scale)
+                .foregroundStyle(gold.opacity(0.9))
 
-            let headRadius = size * 0.22
-            let headCenter = CGPoint(x: midX, y: midY - size * 0.05)
-            context.fill(
-                Path(ellipseIn: CGRect(
-                    x: headCenter.x - headRadius,
-                    y: headCenter.y - headRadius,
-                    width: headRadius * 2,
-                    height: headRadius * 2
-                )),
-                with: .linearGradient(
-                    Gradient(colors: [
-                        Color(red: 1.0, green: 0.90, blue: 0.40),
-                        Color(red: 0.85, green: 0.65, blue: 0.15)
-                    ]),
-                    startPoint: CGPoint(x: midX, y: midY - size * 0.3),
-                    endPoint: CGPoint(x: midX, y: midY + size * 0.2)
-                )
-            )
+            ZStack {
+                DiamondShape()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                gold.opacity(0.20),
+                                Color.white.opacity(0.12),
+                                color.opacity(0.08)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 25 * scale, height: 31 * scale)
 
-            let eyeY = headCenter.y - size * 0.02
-            let eyeSpacing = size * 0.08
-            let eyeSize = size * 0.04
-            for xOff in [-eyeSpacing, eyeSpacing] {
-                context.fill(
-                    Path(ellipseIn: CGRect(
-                        x: midX + xOff - eyeSize / 2,
-                        y: eyeY - eyeSize / 2,
-                        width: eyeSize,
-                        height: eyeSize
-                    )),
-                    with: .color(Color(red: 0.4, green: 0.25, blue: 0.05))
-                )
-            }
+                DiamondShape()
+                    .stroke(gold.opacity(0.55), lineWidth: 0.9 * scale)
+                    .frame(width: 25 * scale, height: 31 * scale)
 
-            var smile = Path()
-            let smileY = headCenter.y + size * 0.06
-            smile.move(to: CGPoint(x: midX - size * 0.07, y: smileY))
-            smile.addQuadCurve(
-                to: CGPoint(x: midX + size * 0.07, y: smileY),
-                control: CGPoint(x: midX, y: smileY + size * 0.06)
-            )
-            context.stroke(
-                smile,
-                with: .color(Color(red: 0.4, green: 0.25, blue: 0.05)),
-                lineWidth: 1.2 * scale
-            )
+                DiamondShape()
+                    .stroke(color.opacity(0.18), lineWidth: 0.45 * scale)
+                    .frame(width: 18 * scale, height: 23 * scale)
 
-            let hatTop = headCenter.y - headRadius
-            let bellSize = size * 0.06
-            let hatPoints: [(dx: CGFloat, dy: CGFloat)] = [
-                (-0.25, -0.08), (0.0, -0.28), (0.25, -0.08)
-            ]
-
-            for pt in hatPoints {
-                var prong = Path()
-                let tipX = midX + size * pt.dx
-                let tipY = hatTop + size * pt.dy
-                let baseSpread = size * 0.06
-
-                prong.move(to: CGPoint(x: midX + size * pt.dx * 0.3, y: hatTop))
-                prong.addQuadCurve(
-                    to: CGPoint(x: tipX, y: tipY),
-                    control: CGPoint(x: tipX - baseSpread, y: hatTop + (tipY - hatTop) * 0.5)
-                )
-                prong.addQuadCurve(
-                    to: CGPoint(x: midX + size * pt.dx * 0.6, y: hatTop + size * 0.02),
-                    control: CGPoint(x: tipX + baseSpread, y: hatTop + (tipY - hatTop) * 0.5)
-                )
-                prong.closeSubpath()
-
-                context.fill(
-                    prong,
-                    with: .linearGradient(
-                        Gradient(colors: [
-                            Color(red: 1.0, green: 0.92, blue: 0.45),
-                            Color(red: 0.90, green: 0.68, blue: 0.18)
-                        ]),
-                        startPoint: CGPoint(x: midX, y: hatTop - size * 0.3),
-                        endPoint: CGPoint(x: midX, y: hatTop)
+                VStack(spacing: 1 * scale) {
+                    Text("\u{2726}")
+                        .font(.system(size: 9 * scale, weight: .semibold))
+                    Text("J")
+                        .font(.system(size: 16 * scale, weight: .black, design: .serif))
+                    Text("\u{2726}")
+                        .font(.system(size: 6.5 * scale, weight: .semibold))
+                }
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            color.opacity(0.94),
+                            gold.opacity(0.78)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
                 )
-
-                context.fill(
-                    Path(ellipseIn: CGRect(
-                        x: tipX - bellSize / 2,
-                        y: tipY - bellSize / 2,
-                        width: bellSize,
-                        height: bellSize
-                    )),
-                    with: .color(Color(red: 1.0, green: 0.85, blue: 0.25))
-                )
-                context.stroke(
-                    Path(ellipseIn: CGRect(
-                        x: tipX - bellSize / 2,
-                        y: tipY - bellSize / 2,
-                        width: bellSize,
-                        height: bellSize
-                    )),
-                    with: .color(Color(red: 0.7, green: 0.50, blue: 0.10)),
-                    lineWidth: 0.6 * scale
-                )
+                .shadow(color: .white.opacity(0.45), radius: 0.45, y: 0.5)
             }
 
-            let collarY = headCenter.y + headRadius - size * 0.02
-            var collar = Path()
-            let points = 5
-            for i in 0...points {
-                let progress = CGFloat(i) / CGFloat(points)
-                let x = midX - size * 0.28 + progress * size * 0.56
-                let peak = i.isMultiple(of: 2) ? collarY + size * 0.1 : collarY
-                if i == 0 {
-                    collar.move(to: CGPoint(x: x, y: peak))
-                } else {
-                    collar.addLine(to: CGPoint(x: x, y: peak))
-                }
+            HStack(spacing: 3 * scale) {
+                Rectangle()
+                    .fill(gold.opacity(0.45))
+                    .frame(width: 9 * scale, height: 0.7 * scale)
+                DiamondShape()
+                    .fill(gold.opacity(0.65))
+                    .frame(width: 4 * scale, height: 4 * scale)
+                Rectangle()
+                    .fill(gold.opacity(0.45))
+                    .frame(width: 9 * scale, height: 0.7 * scale)
             }
-            context.stroke(
-                collar,
-                with: .linearGradient(
-                    Gradient(colors: [
-                        Color(red: 1.0, green: 0.90, blue: 0.40),
-                        Color(red: 0.80, green: 0.58, blue: 0.12)
-                    ]),
-                    startPoint: CGPoint(x: midX - size * 0.3, y: collarY),
-                    endPoint: CGPoint(x: midX + size * 0.3, y: collarY)
-                ),
-                lineWidth: 1.5 * scale
-            )
         }
-        .frame(width: size, height: size)
+        .frame(width: 42 * scale, height: 46 * scale)
+    }
+}
+
+private struct SuitPip: View {
+    let suit: Suit
+    let color: Color
+    let size: CGFloat
+
+    var body: some View {
+        Text(suit.character)
+            .font(.system(size: size, weight: .black, design: .serif))
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [
+                        color.opacity(0.98),
+                        color.opacity(0.82)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .shadow(color: .white.opacity(0.42), radius: 0.4, x: 0, y: 0.5)
+            .shadow(color: color.opacity(0.18), radius: 0.8, x: 0, y: 0.4)
+    }
+}
+
+private struct RoyalCardCenter: View {
+    let card: Card
+    let suitColor: Color
+    let scale: CGFloat
+
+    private var accentGold: Color {
+        Color(red: 0.88, green: 0.62, blue: 0.16)
+    }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6 * scale)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            suitColor.opacity(0.09),
+                            Color.white.opacity(0.16),
+                            accentGold.opacity(0.08)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6 * scale)
+                        .stroke(accentGold.opacity(0.34), lineWidth: 0.8 * scale)
+                )
+                .frame(width: 33 * scale, height: 43 * scale)
+
+            VStack(spacing: 1 * scale) {
+                Text(card.rank.label)
+                    .font(.system(size: 23 * scale, weight: .black, design: .serif))
+                    .foregroundStyle(suitColor)
+                    .shadow(color: .white.opacity(0.55), radius: 0.6, y: 0.5)
+
+                SuitPip(suit: card.suit, color: suitColor, size: 15 * scale)
+            }
+        }
+        .rotationEffect(.degrees(card.rank == .queen ? -1.5 : 1.5))
     }
 }
 

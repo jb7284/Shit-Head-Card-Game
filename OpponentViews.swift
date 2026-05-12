@@ -35,6 +35,9 @@ private struct OpponentIdentityView: View {
     var body: some View {
         VStack(spacing: 2 * gs) {
             AvatarView(avatar: player.avatar, size: avatarSize)
+                .brightness(active ? 0 : -0.18)
+                .saturation(active ? 1 : 0.65)
+                .contrast(active ? 1 : 0.92)
             Text(player.name)
                 .font(.system(size: 12 * gs, weight: .bold))
                 .foregroundStyle(.white.opacity(active ? 0.9 : 0.5))
@@ -71,6 +74,17 @@ private struct SkippedOverlayModifier: ViewModifier {
     }
 }
 
+private struct InactiveOpponentCardsModifier: ViewModifier {
+    let active: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .brightness(active ? 0 : -0.34)
+            .saturation(active ? 1 : 0.48)
+            .contrast(active ? 1 : 0.88)
+    }
+}
+
 // MARK: - Top Opponent
 
 struct TopOpponentView: View {
@@ -88,7 +102,7 @@ struct TopOpponentView: View {
 
             VStack(alignment: .leading, spacing: 4 * gs) {
                 OpponentHandFan(cards: player.hand, avatarSize: 80 * gs, playerID: player.id)
-                    .opacity(active ? 1.0 : 0.5)
+                    .modifier(InactiveOpponentCardsModifier(active: active))
 
                 HStack(spacing: 3 * gs) {
                     ForEach(0..<3, id: \.self) { i in
@@ -113,7 +127,7 @@ struct TopOpponentView: View {
                             .padding(.leading, 6 * gs)
                     }
                 }
-                .opacity(active ? 1.0 : 0.5)
+                .modifier(InactiveOpponentCardsModifier(active: active))
             }
         }
         .animation(.easeInOut(duration: 0.3), value: active)
@@ -137,10 +151,10 @@ struct SideOpponentView: View {
             OpponentIdentityView(player: player, active: active, isNext: isNext, avatarSize: 84 * gs)
 
             SideOpponentHandFan(cards: player.hand, avatarSize: 84 * gs, playerID: player.id)
-                .opacity(active ? 1.0 : 0.5)
+                .modifier(InactiveOpponentCardsModifier(active: active))
 
             tableCards
-                .opacity(active ? 1.0 : 0.5)
+                .modifier(InactiveOpponentCardsModifier(active: active))
         }
         .animation(.easeInOut(duration: 0.3), value: active)
         .modifier(SkippedOverlayModifier(playerID: player.id, skippedPlayerID: skippedPlayerID))
@@ -391,43 +405,20 @@ struct DrawPileStack: View {
 
     @Environment(\.gameScale) private var gs
 
-    private var cardW: CGFloat { (mini ? 30 : 38) * gs }
-    private var cardH: CGFloat { (mini ? 40 : 54) * gs }
-    private var radius: CGFloat { (mini ? 4 : 5) * gs }
     private var fontSize: CGFloat { (mini ? 9 : 12) * gs }
     private var stackOff: CGFloat { (mini ? 1.5 : 2) * gs }
+    private var placeholderCard: Card { Card(suit: .clubs, rank: .ace) }
 
     var body: some View {
         let layers = min(count, 4)
         ZStack {
             ForEach(0..<layers, id: \.self) { i in
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.55, green: 0.42, blue: 0.18),
-                                Color(red: 0.40, green: 0.30, blue: 0.12)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: radius)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 0.78, green: 0.66, blue: 0.34).opacity(0.5),
-                                        Color(red: 0.50, green: 0.38, blue: 0.18).opacity(0.3)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 0.7
-                            )
-                    )
-                    .frame(width: cardW, height: cardH)
-                    .shadow(color: .black.opacity(0.4), radius: 2 * gs, x: 1 * gs, y: 2 * gs)
+                CardView(
+                    card: placeholderCard,
+                    faceUp: false,
+                    small: !mini,
+                    style: mini ? .opponent : .standard
+                )
                     .offset(x: CGFloat(i) * stackOff, y: CGFloat(-i) * stackOff)
             }
 

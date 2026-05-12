@@ -1,6 +1,6 @@
-# $H!T Head
+# Shed Head
 
-A SwiftUI card game for macOS. Play *Shithead* — the last player holding cards is crowned the Sh\*t Head.
+A SwiftUI shedding-card game for macOS. Race to empty your hand, table cards, and blind face-down cards before the other players.
 
 ![Swift](https://img.shields.io/badge/Swift-Xcode%2026.4+-orange) ![Platform](https://img.shields.io/badge/Platform-macOS%2026.3+-blue)
 
@@ -40,10 +40,10 @@ Get rid of all your cards and you're out. Last player holding cards loses.
 
 ## Build and Run
 
-Open `$H!T Head.xcodeproj` in Xcode 26.4+ and run. The current project target requires macOS 26.3+.
+Open `Shed Head.xcodeproj` in Xcode 26.4+ and run the `Shed Head` scheme. The current project target requires macOS 26.3+.
 
 ```sh
-xcodebuild -project '$H!T Head.xcodeproj' -scheme '$H!T Head' -destination 'platform=macOS' build
+xcodebuild -project 'Shed Head.xcodeproj' -scheme 'Shed Head' -destination 'platform=macOS' build
 ```
 
 No Swift packages or external dependencies.
@@ -51,7 +51,7 @@ No Swift packages or external dependencies.
 ## Project Structure
 
 ```
-$H!T Head/
+Shed Head/
 ├── _H_T_HeadApp.swift      # @main entry point
 ├── ContentView.swift        # Root view, game phase routing, overlays
 ├── GameEngine.swift         # Rules, turn management, AI strategies

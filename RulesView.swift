@@ -18,7 +18,7 @@ struct RulesSheet: View {
                             .foregroundStyle(.white.opacity(0.7))
                     }
 
-                    Text("Play cards equal to or higher than the top of the pile. If you can't play, pick up the pile. First to empty all cards wins — last player left is the $H!T Head!")
+                    Text("Play cards equal to or higher than the top of the pile. If you can't play, pick up the pile. First to empty all cards wins — last player left is stuck with the stack.")
                         .font(.subheadline)
 
                     VStack(alignment: .leading, spacing: 12) {

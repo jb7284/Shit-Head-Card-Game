@@ -16,21 +16,27 @@ struct SwapPhaseView: View {
     private let swapSpace = "swapArea"
 
     var body: some View {
-        VStack(spacing: 10) {
-            header
-            Spacer(minLength: 0)
-            tableCards
-            Spacer(minLength: 0)
-            handCards
-            Spacer(minLength: 0)
-            readyButton
+        ZStack {
+            Image("table_background")
+                .resizable()
+                .ignoresSafeArea()
+
+            VStack(spacing: 10) {
+                header
+                Spacer(minLength: 0)
+                tableCards
+                Spacer(minLength: 0)
+                handCards
+                Spacer(minLength: 0)
+                readyButton
+            }
+            .coordinateSpace(name: swapSpace)
+            .onPreferenceChange(SwapFrameKey.self) { cardFrames = $0 }
+            .padding(.horizontal, 8)
+            .padding(.top, 44)
+            .padding(.bottom, 40)
+            .onAppear { dealRevealed = true }
         }
-        .coordinateSpace(name: swapSpace)
-        .onPreferenceChange(SwapFrameKey.self) { cardFrames = $0 }
-        .padding(.horizontal, 8)
-        .padding(.top, 44)
-        .padding(.bottom, 40)
-        .onAppear { dealRevealed = true }
     }
 
     private var header: some View {

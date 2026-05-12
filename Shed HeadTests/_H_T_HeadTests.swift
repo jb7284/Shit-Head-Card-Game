@@ -1,12 +1,12 @@
 //
 //  _H_T_HeadTests.swift
-//  $H!T HeadTests
+//  Shed HeadTests
 //
 //  Created by Johnathan Branscum on 5/7/26.
 //
 
 import Testing
-@testable import _H_T_Head
+@testable import Shed_Head
 
 struct _H_T_HeadTests {
 

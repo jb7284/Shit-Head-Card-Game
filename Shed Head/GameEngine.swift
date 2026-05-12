@@ -346,7 +346,7 @@ class GameEngine {
         if activePlayers.count <= 1 {
             state.phase = .finished
             if let loser = activePlayers.first {
-                message = "\(loser.name) is the Sh*t Head!"
+                message = "\(loser.name) is stuck with the stack!"
             } else {
                 message = "Game over — it's a tie!"
             }

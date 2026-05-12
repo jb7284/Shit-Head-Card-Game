@@ -93,7 +93,7 @@ struct StartScreenView: View {
     // MARK: - Title
 
     private var title: some View {
-        Text("$H!T HEAD")
+        Text("SHED HEAD")
             .font(.system(size: 42, weight: .black, design: .serif))
             .foregroundStyle(
                 LinearGradient(
