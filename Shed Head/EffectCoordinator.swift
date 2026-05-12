@@ -90,8 +90,6 @@ class EffectCoordinator {
     }
 
     func triggerRejectionFeedback(for card: Card, engine: GameEngine) {
-        guard engine.difficulty == .easy else { return }
-
         rejectionShakeID = card.uid
         rejectionShakeTrigger = 0
         withAnimation(.linear(duration: rejectionShakeDuration)) {
@@ -103,6 +101,8 @@ class EffectCoordinator {
                 self?.rejectionShakeTrigger = 0
             }
         }
+
+        guard engine.difficulty == .easy else { return }
 
         let reason = rejectionReason(for: card, engine: engine)
         rejectionMessageTask?.cancel()

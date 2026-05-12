@@ -6,9 +6,12 @@ struct ContentView: View {
     @State private var difficulty: Difficulty = .medium
     @State private var flights = FlightOrchestrator()
     @State private var effects = EffectCoordinator()
+    @AppStorage("soundEffectsEnabled") private var soundEffectsEnabled = true
+    @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
 
     @State private var swapSelection: SwapSelection? = nil
     @State private var showRules = false
+    @State private var showTutorial = false
     @State private var dealRevealed = false
     @State private var dragCardID: UUID? = nil
     @State private var dragOffset: CGSize = .zero
@@ -37,17 +40,7 @@ struct ContentView: View {
                     }
 
                     ForEach(Array(effects.burnedCards.enumerated()), id: \.element.uid) { index, card in
-                        let scatter = CGFloat(index) * 0.15
-                        CardView(card: card, faceUp: true)
-                            .allowsHitTesting(false)
-                            .position(
-                                x: flights.pileFrame.midX + effects.burnFlyProgress * (400 + CGFloat(index) * 25),
-                                y: flights.pileFrame.midY - effects.burnFlyProgress * (600 + CGFloat(index) * 15)
-                            )
-                            .rotationEffect(.degrees(effects.burnFlyProgress * (35 + Double(index) * 12)))
-                            .scaleEffect(0.85 - effects.burnFlyProgress * 0.25 + scatter * 0.1)
-                            .opacity(max(0, 1 - effects.burnFlyProgress * 1.6))
-                            .zIndex(300)
+                        burnedCardView(card, index: index)
                     }
                 }
                 .environment(\.gameScale, scale)
@@ -94,17 +87,37 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            SoundManager.isEnabled = soundEffectsEnabled
             effects.restartTurnPulse()
             triggerAI()
+            if !hasSeenTutorial {
+                showTutorial = true
+            }
+        }
+        .onChange(of: soundEffectsEnabled) { _, enabled in
+            SoundManager.isEnabled = enabled
         }
         .onDisappear {
             aiTask?.cancel()
         }
         .overlay(alignment: .bottomLeading) {
-            rulesButton
+            gameplayMenu
         }
         .sheet(isPresented: $showRules) {
             RulesSheet(isPresented: $showRules)
+        }
+        .sheet(isPresented: $showTutorial) {
+            TutorialSheet(
+                onFinish: {
+                    hasSeenTutorial = true
+                    showTutorial = false
+                },
+                onStartBeginnerGame: {
+                    hasSeenTutorial = true
+                    showTutorial = false
+                    startGame(difficulty: .easy)
+                }
+            )
         }
         .overlay {
             if engine.state.phase == .finished {
@@ -112,7 +125,7 @@ struct ContentView: View {
                     loser: engine.state.loser,
                     winner: engine.state.finishOrder.first,
                     turnCount: engine.state.turnNumber,
-                    onPlayAgain: startGame
+                    onPlayAgain: { startGame() }
                 )
                 .transition(.opacity)
             }
@@ -138,8 +151,9 @@ struct ContentView: View {
         case .dealing:
             StartScreenView(
                 difficulty: $difficulty,
-                onDeal: startGame,
-                onShowRules: { showRules = true }
+                onDeal: { startGame() },
+                onShowRules: { showRules = true },
+                onShowTutorial: { showTutorial = true }
             )
         case .swapping:
             if let human = humanPlayer {
@@ -180,15 +194,38 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private var rulesButton: some View {
+    private var gameplayMenu: some View {
         if engine.state.phase == .playing || engine.state.phase == .finished {
-            Button {
-                showRules = true
+            Menu {
+                Button {
+                    showTutorial = true
+                } label: {
+                    Label("Tutorial", systemImage: "graduationcap.fill")
+                }
+
+                Button {
+                    showRules = true
+                } label: {
+                    Label("Rules", systemImage: "list.bullet.rectangle")
+                }
+
+                Button(role: .destructive) {
+                    restartGame()
+                } label: {
+                    Label("Restart Game", systemImage: "arrow.clockwise")
+                }
+
+                Toggle(isOn: $soundEffectsEnabled) {
+                    Label(
+                        soundEffectsEnabled ? "Sound Effects On" : "Sound Effects Off",
+                        systemImage: soundEffectsEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill"
+                    )
+                }
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "list.bullet.rectangle")
+                    Image(systemName: "ellipsis.circle")
                         .font(.system(size: 13, weight: .medium))
-                    Text("Rules")
+                    Text("Menu")
                         .font(.system(size: 13, weight: .medium))
                 }
                 .foregroundStyle(.white.opacity(0.7))
@@ -212,15 +249,48 @@ struct ContentView: View {
         engine.state.players.first(where: { !$0.isAI })
     }
 
+    private func burnedCardView(_ card: Card, index: Int) -> some View {
+        let progress = effects.burnFlyProgress
+        let scatter = CGFloat(index) * 0.15
+        let xOffset = progress * (400 + CGFloat(index) * 25)
+        let yOffset = progress * (600 + CGFloat(index) * 15)
+        let rotation = progress * (35 + Double(index) * 12)
+        let scale = 0.85 - progress * 0.25 + scatter * 0.1
+        let opacity = max(0, 1 - progress * 1.6)
+
+        return CardView(card: card, faceUp: true)
+            .allowsHitTesting(false)
+            .position(x: flights.pileFrame.midX + xOffset, y: flights.pileFrame.midY - yOffset)
+            .rotationEffect(.degrees(rotation))
+            .scaleEffect(scale)
+            .opacity(opacity)
+            .zIndex(300)
+    }
+
     // MARK: - Game Lifecycle
 
-    private func startGame() {
+    private func startGame(difficulty selectedDifficulty: Difficulty? = nil) {
+        if let selectedDifficulty {
+            difficulty = selectedDifficulty
+        }
+        let gameDifficulty = selectedDifficulty ?? difficulty
         selectedCards.removeAll()
         flights.reset()
+        effects = EffectCoordinator()
         dealRevealed = false
         withAnimation(springAnim) {
-            engine.startNewGame(playerCount: 4, difficulty: difficulty)
+            engine.startNewGame(playerCount: 4, difficulty: gameDifficulty)
         }
+    }
+
+    private func restartGame() {
+        aiTask?.cancel()
+        swapSelection = nil
+        dragCardID = nil
+        dragOffset = .zero
+        startGame()
+        effects.restartTurnPulse()
+        triggerAI()
     }
 
     private func confirmSwap() {

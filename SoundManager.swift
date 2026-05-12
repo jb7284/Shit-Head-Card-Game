@@ -2,6 +2,8 @@ import AVFoundation
 
 @MainActor
 enum SoundManager {
+    static var isEnabled = true
+
     private static var engine: AVAudioEngine?
     private static var playerNode: AVAudioPlayerNode?
     private static let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
@@ -18,6 +20,7 @@ enum SoundManager {
     }
 
     static func play(_ sound: GameSound) {
+        guard isEnabled else { return }
         ensureEngine()
         guard let node = playerNode else { return }
 

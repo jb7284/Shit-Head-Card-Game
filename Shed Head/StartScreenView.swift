@@ -5,6 +5,7 @@ struct StartScreenView: View {
 
     let onDeal: () -> Void
     let onShowRules: () -> Void
+    let onShowTutorial: () -> Void
 
     var body: some View {
         ZStack {
@@ -19,7 +20,7 @@ struct StartScreenView: View {
                 Spacer().frame(height: 24)
                 dealButton
                 Spacer().frame(height: 16)
-                rulesButton
+                helpButtons
                 Spacer().frame(height: 20)
             }
         }
@@ -144,17 +145,27 @@ struct StartScreenView: View {
         }
     }
 
-    private var rulesButton: some View {
-        Button(action: onShowRules) {
-            HStack(spacing: 5) {
-                Image(systemName: "book.closed")
-                    .font(.system(size: 13, weight: .medium))
-                Text("Rules")
-                    .font(.system(size: 14, weight: .medium))
+    private var helpButtons: some View {
+        HStack(spacing: 18) {
+            Button(action: onShowTutorial) {
+                helpLabel("Tutorial", icon: "graduationcap.fill")
             }
-            .foregroundStyle(.white.opacity(0.5))
+
+            Button(action: onShowRules) {
+                helpLabel("Rules", icon: "book.closed")
+            }
         }
         .buttonStyle(.plain)
+    }
+
+    private func helpLabel(_ title: String, icon: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .medium))
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+        }
+        .foregroundStyle(.white.opacity(0.5))
     }
 
     private func pickerTitle(_ title: String) -> some View {
