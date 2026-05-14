@@ -39,7 +39,14 @@ class EffectCoordinator {
     private let rejectionShakeDuration: TimeInterval = 0.45
     private let rejectionMessageDuration: TimeInterval = 1.5
 
-    func handle(_ event: GameEvent, playFlightDuration: TimeInterval, isCurrentPlayerAI: Bool, playDirection: Int, isFourOfAKindBurn: Bool = false) {
+    func handle(
+        _ event: GameEvent,
+        playFlightDuration: TimeInterval,
+        isCurrentPlayerAI: Bool,
+        playDirection: Int,
+        isFastPaced: Bool,
+        isFourOfAKindBurn: Bool = false
+    ) {
         if event != .none && event != .reverse {
             withAnimation(.easeIn(duration: 0.3)) {
                 reverseEffect = false
@@ -49,12 +56,12 @@ class EffectCoordinator {
         switch event {
         case .burn:
             let wasFourOfAKind = isFourOfAKindBurn
-            let burnDelay = playFlightDuration + 0.5
+            let burnDelay = AIPacing.burnEffectDelay(playFlightDuration: playFlightDuration, humanOut: isFastPaced)
             DispatchQueue.main.asyncAfter(deadline: .now() + burnDelay) { [weak self] in
-                self?.triggerBurnEffect()
+                self?.triggerBurnEffect(isFastPaced: isFastPaced)
                 SoundManager.play(.burn)
                 if wasFourOfAKind {
-                    self?.triggerFourOfAKindEffect()
+                    self?.triggerFourOfAKindEffect(isFastPaced: isFastPaced)
                 }
             }
         case .wild:
@@ -118,15 +125,16 @@ class EffectCoordinator {
         }
     }
 
-    func showSkipped(playerID: String) {
+    func showSkipped(playerID: String, emphasis: Bool = false) {
         skippedTask?.cancel()
         withAnimation(GameTheme.snappySpring) {
             skippedPlayerID = playerID
         }
+        let holdDuration: Duration = emphasis ? .seconds(2.8) : .seconds(1.5)
         skippedTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: holdDuration)
             guard !Task.isCancelled else { return }
-            withAnimation(.easeIn(duration: 0.4)) {
+            withAnimation(.easeIn(duration: emphasis ? 0.7 : 0.4)) {
                 self?.skippedPlayerID = nil
             }
         }
@@ -206,35 +214,38 @@ class EffectCoordinator {
         return "Can\u{2019}t play that card right now"
     }
 
-    private func triggerBurnEffect() {
+    private func triggerBurnEffect(isFastPaced: Bool) {
+        let effectDuration: TimeInterval = isFastPaced ? 0.18 : 0.6
+        let flyDuration: TimeInterval = isFastPaced ? 0.16 : 0.55
         let flyOffCards = pendingBurnPile.isEmpty
             ? Array(lastPileSnapshot.suffix(4))
             : Array(pendingBurnPile.suffix(4))
 
-        withAnimation(.easeOut(duration: 0.6)) {
+        withAnimation(.easeOut(duration: effectDuration)) {
             burnEffect = true
             pendingBurnPile.removeAll()
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + effectDuration) { [weak self] in
             self?.burnEffect = false
         }
 
         burnedCards = flyOffCards
         burnFlyProgress = 0
-        withAnimation(.easeIn(duration: 0.55)) {
+        withAnimation(.easeIn(duration: flyDuration)) {
             burnFlyProgress = 1
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + effectDuration) { [weak self] in
             self?.burnedCards.removeAll()
             self?.burnFlyProgress = 0
         }
     }
 
-    private func triggerFourOfAKindEffect() {
+    private func triggerFourOfAKindEffect(isFastPaced: Bool) {
+        let holdDuration: TimeInterval = isFastPaced ? 0.45 : 1.8
         withAnimation(GameTheme.snappySpring) {
             fourOfAKindEffect = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + holdDuration) { [weak self] in
             withAnimation(.easeIn(duration: 0.4)) {
                 self?.fourOfAKindEffect = false
             }

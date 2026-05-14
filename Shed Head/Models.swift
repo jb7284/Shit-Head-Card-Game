@@ -175,16 +175,33 @@ enum GamePhase {
     case finished
 }
 
-enum Difficulty: CaseIterable {
-    case easy, medium, expert
+enum GameplayMode: CaseIterable {
+    case tutorialMode, play
 
     var label: String {
         switch self {
-        case .easy: return "Beginner"
-        case .medium: return "Normal"
-        case .expert: return "Expert"
+        case .tutorialMode: return "Tutorial Mode"
+        case .play: return "Play"
         }
     }
+
+    var actionLabel: String {
+        switch self {
+        case .tutorialMode: return "Start Tutorial"
+        case .play: return "Play"
+        }
+    }
+
+    var difficulty: Difficulty {
+        switch self {
+        case .tutorialMode: return .easy
+        case .play: return .medium
+        }
+    }
+}
+
+enum Difficulty {
+    case easy, medium
 }
 
 @Observable

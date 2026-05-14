@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TutorialSheet: View {
     let onFinish: () -> Void
-    let onStartBeginnerGame: () -> Void
+    let onStartTutorialMode: () -> Void
 
     @State private var selectedStep = 0
 
@@ -38,7 +38,7 @@ struct TutorialSheet: View {
                     safeAreaInsets: safeAreaInsets,
                     onSelectPage: { selectedStep = $0 },
                     onFinish: onFinish,
-                    onStartBeginnerGame: onStartBeginnerGame
+                    onStartTutorialMode: onStartTutorialMode
                 )
                     .tag(index)
             }
@@ -54,7 +54,7 @@ struct TutorialSheet: View {
             safeAreaInsets: safeAreaInsets,
             onSelectPage: { selectedStep = $0 },
             onFinish: onFinish,
-            onStartBeginnerGame: onStartBeginnerGame
+            onStartTutorialMode: onStartTutorialMode
         )
         #endif
     }
@@ -69,7 +69,7 @@ private struct TutorialPage: View {
     let safeAreaInsets: EdgeInsets
     let onSelectPage: (Int) -> Void
     let onFinish: () -> Void
-    let onStartBeginnerGame: () -> Void
+    let onStartTutorialMode: () -> Void
 
     var body: some View {
         ZStack {
@@ -138,10 +138,10 @@ private struct TutorialPage: View {
 
                 if showsStartButton {
                     Button {
-                        onStartBeginnerGame()
+                        onStartTutorialMode()
                     } label: {
                         HStack(spacing: 7) {
-                            Text("Start Beginner Game")
+                            Text("Start Tutorial Mode")
                                 .font(.system(size: 15, weight: .bold))
                             Image(systemName: "play.fill")
                                 .font(.system(size: 12, weight: .bold))
@@ -733,5 +733,5 @@ private extension Color {
 }
 
 #Preview("Tutorial") {
-    TutorialSheet(onFinish: {}, onStartBeginnerGame: {})
+    TutorialSheet(onFinish: {}, onStartTutorialMode: {})
 }

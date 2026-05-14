@@ -3,9 +3,10 @@ import SwiftUI
 struct ContentView: View {
     @State private var engine = GameEngine()
     @State private var selectedCards: [Card] = []
-    @State private var difficulty: Difficulty = .medium
+    @State private var gameplayMode: GameplayMode = .play
     @State private var flights = FlightOrchestrator()
     @State private var effects = EffectCoordinator()
+    @State private var tutorial = TutorialModeController()
     @AppStorage("soundEffectsEnabled") private var soundEffectsEnabled = true
     @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
 
@@ -65,18 +66,21 @@ struct ContentView: View {
         }
         .onChange(of: engine.eventSerial) { _, _ in
             if engine.lastEvent == .skip, let skippedID = engine.skippedPlayerID {
-                effects.showSkipped(playerID: skippedID)
+                effects.showSkipped(playerID: skippedID, emphasis: tutorial.isActive)
             }
             effects.handle(engine.lastEvent,
                            playFlightDuration: flights.playFlightDuration,
                            isCurrentPlayerAI: engine.state.currentPlayer.isAI,
                            playDirection: engine.state.playDirection,
+                           isFastPaced: !(humanPlayer?.hasCards ?? false),
                            isFourOfAKindBurn: engine.lastBurnWasFourOfAKind)
         }
         .onChange(of: engine.state.currentPlayerIndex) { _, _ in
             effects.restartTurnPulse()
+            evaluateTutorialLesson()
         }
         .onChange(of: engine.state.turnNumber) { _, _ in
+            evaluateTutorialLesson()
             triggerAI()
         }
         .onChange(of: engine.state.phase) { _, phase in
@@ -85,17 +89,19 @@ struct ContentView: View {
                     engine.state.phase == .finished
                 }
             }
+            evaluateTutorialLesson()
         }
         .onAppear {
             SoundManager.isEnabled = soundEffectsEnabled
             effects.restartTurnPulse()
             triggerAI()
-            if !hasSeenTutorial {
-                showTutorial = true
-            }
         }
         .onChange(of: soundEffectsEnabled) { _, enabled in
             SoundManager.isEnabled = enabled
+        }
+        .onChange(of: tutorial.activeDemo) { _, demo in
+            guard demo != nil else { return }
+            scheduleTutorialDemoCompletion()
         }
         .onDisappear {
             aiTask?.cancel()
@@ -112,10 +118,10 @@ struct ContentView: View {
                     hasSeenTutorial = true
                     showTutorial = false
                 },
-                onStartBeginnerGame: {
+                onStartTutorialMode: {
                     hasSeenTutorial = true
                     showTutorial = false
-                    startGame(difficulty: .easy)
+                    startGame(mode: .tutorialMode)
                 }
             )
         }
@@ -124,7 +130,6 @@ struct ContentView: View {
                 GameOverOverlay(
                     loser: engine.state.loser,
                     winner: engine.state.finishOrder.first,
-                    turnCount: engine.state.turnNumber,
                     onPlayAgain: { startGame() }
                 )
                 .transition(.opacity)
@@ -141,6 +146,20 @@ struct ContentView: View {
                 .transition(.opacity)
             }
         }
+        .overlay {
+            if let overlay = tutorial.currentOverlay {
+                TutorialCoachOverlay(content: overlay, onContinue: continueTutorialOverlay)
+                    .transition(.opacity)
+                    .zIndex(700)
+            }
+        }
+        .overlay {
+            if let demo = tutorial.activeDemo {
+                TutorialDemoOverlay(demo: demo)
+                    .transition(.opacity)
+                    .zIndex(650)
+            }
+        }
     }
 
     // MARK: - Phase Content
@@ -150,7 +169,7 @@ struct ContentView: View {
         switch engine.state.phase {
         case .dealing:
             StartScreenView(
-                difficulty: $difficulty,
+                gameplayMode: $gameplayMode,
                 onDeal: { startGame() },
                 onShowRules: { showRules = true },
                 onShowTutorial: { showTutorial = true }
@@ -161,6 +180,8 @@ struct ContentView: View {
                     human: human,
                     selection: $swapSelection,
                     dealRevealed: $dealRevealed,
+                    tutorialHighlightedCardIDs: tutorial.highlightedCardIDs,
+                    tutorialActiveDemo: tutorial.activeDemo,
                     namespace: swapNamespace,
                     onTapCard: handleSwapTap,
                     onSwap: handleSwapDrag,
@@ -182,6 +203,8 @@ struct ContentView: View {
                 skippedPlayerID: effects.skippedPlayerID,
                 revealedFaceDownIndex: effects.revealedFaceDownIndex,
                 pendingBurnPile: effects.pendingBurnPile,
+                tutorialHighlightedCardIDs: tutorial.highlightedCardIDs,
+                tutorialActiveDemo: tutorial.activeDemo,
                 onPickUpPile: pickUpPile,
                 onFaceDownTap: playFaceDownCard,
                 onCardTap: handleCardTap,
@@ -269,17 +292,27 @@ struct ContentView: View {
 
     // MARK: - Game Lifecycle
 
-    private func startGame(difficulty selectedDifficulty: Difficulty? = nil) {
-        if let selectedDifficulty {
-            difficulty = selectedDifficulty
+    private func startGame(mode selectedMode: GameplayMode? = nil) {
+        if let selectedMode {
+            gameplayMode = selectedMode
         }
-        let gameDifficulty = selectedDifficulty ?? difficulty
+        let selectedGameplayMode = selectedMode ?? gameplayMode
+        aiTask?.cancel()
         selectedCards.removeAll()
+        swapSelection = nil
+        dragCardID = nil
+        dragOffset = .zero
         flights.reset()
         effects = EffectCoordinator()
         dealRevealed = false
         withAnimation(springAnim) {
-            engine.startNewGame(playerCount: 4, difficulty: gameDifficulty)
+            if selectedGameplayMode == .tutorialMode {
+                engine.startTutorialGame(playerCount: 4)
+                tutorial.start()
+            } else {
+                engine.startNewGame(playerCount: 4, difficulty: selectedGameplayMode.difficulty)
+                tutorial.stop()
+            }
         }
     }
 
@@ -294,18 +327,24 @@ struct ContentView: View {
     }
 
     private func confirmSwap() {
+        guard !tutorial.blocksInput else { return }
         swapSelection = nil
         dealRevealed = false
         withAnimation(springAnim) {
             engine.confirmSwap()
+            if tutorial.isActive {
+                engine.forceHumanTutorialTurn()
+            }
         }
         effects.restartTurnPulse()
+        evaluateTutorialLesson()
         triggerAI()
     }
 
     // MARK: - Swap Phase
 
     private func handleSwapDrag(handIndex: Int, faceUpIndex: Int) {
+        guard !tutorial.blocksInput else { return }
         withAnimation(springAnim) {
             engine.swapCards(handIndex: handIndex, faceUpIndex: faceUpIndex)
         }
@@ -313,6 +352,7 @@ struct ContentView: View {
     }
 
     private func handleSwapTap(isFaceUp: Bool, index: Int) {
+        guard !tutorial.blocksInput else { return }
         let tapped: SwapSelection = isFaceUp ? .faceUp(index) : .hand(index)
 
         guard let current = swapSelection else {
@@ -353,13 +393,17 @@ struct ContentView: View {
     }
 
     private func pickUpPile() {
+        guard !tutorial.blocksInput else { return }
         selectedCards.removeAll()
         animateAction { engine.pickUpPile() }
+        tutorial.markPlayerActed()
         effects.triggerHaptic(.levelChange)
+        evaluateTutorialLesson()
         triggerAI()
     }
 
     private func playFaceDownCard(at index: Int) {
+        guard !tutorial.blocksInput else { return }
         guard effects.revealedFaceDownIndex == nil else { return }
 
         effects.revealedFaceDownIndex = index
@@ -376,11 +420,14 @@ struct ContentView: View {
             if engine.lastEvent == .failedFlip {
                 effects.triggerHaptic(.levelChange)
             }
+            tutorial.markPlayerActed()
+            evaluateTutorialLesson()
             triggerAI()
         }
     }
 
     private func playSelectedCards() {
+        guard !tutorial.blocksInput else { return }
         animateAction {
             engine.playCards(selectedCards)
             selectedCards.removeAll()
@@ -388,19 +435,25 @@ struct ContentView: View {
             effects.setupPendingBurn(pre: pre, post: post, lastEvent: engine.lastEvent)
             effects.scheduleDrawHaptic(pre: pre, post: post)
         }
+        tutorial.markPlayerActed()
+        evaluateTutorialLesson()
         triggerAI()
     }
 
     // MARK: - Joker
 
     private func handleJokerTarget(_ targetIndex: Int) {
+        guard !tutorial.blocksInput else { return }
         animateAction { engine.assignJokerPile(to: targetIndex) }
+        tutorial.markPlayerActed()
+        evaluateTutorialLesson()
         triggerAI()
     }
 
     // MARK: - Card Selection & Drag
 
     private func handleCardTap(_ card: Card) {
+        guard !tutorial.blocksInput else { return }
         guard engine.canPlay(card) else {
             effects.triggerRejectionFeedback(for: card, engine: engine)
             return
@@ -411,19 +464,25 @@ struct ContentView: View {
     }
 
     private func handleCardDoubleTap(_ card: Card) {
+        guard !tutorial.blocksInput else { return }
         guard engine.canPlay(card) else {
             effects.triggerRejectionFeedback(for: card, engine: engine)
             return
         }
-        if selectedCards.isEmpty || selectedCards[0].rank != card.rank {
-            selectedCards = [card]
-        } else if !selectedCards.contains(card) {
-            selectedCards.append(card)
+        if let tutorialGroup = tutorial.highlightedPlayableGroup(tapped: card, engine: engine) {
+            selectedCards = tutorialGroup
+        } else {
+            if selectedCards.isEmpty || selectedCards[0].rank != card.rank {
+                selectedCards = [card]
+            } else if !selectedCards.contains(card) {
+                selectedCards.append(card)
+            }
         }
         playSelectedCards()
     }
 
     private func beginCardDrag(_ card: Card) {
+        guard !tutorial.blocksInput else { return }
         guard engine.canPlay(card) else {
             effects.triggerRejectionFeedback(for: card, engine: engine)
             return
@@ -437,10 +496,12 @@ struct ContentView: View {
     }
 
     private func updateCardDrag(_ translation: CGSize) {
+        guard !tutorial.blocksInput else { return }
         dragOffset = translation
     }
 
     private func endCardDrag(_ translation: CGSize) {
+        guard !tutorial.blocksInput else { return }
         if translation.height < -50 && !selectedCards.isEmpty {
             playSelectedCards()
         }
@@ -472,15 +533,16 @@ struct ContentView: View {
         aiTask?.cancel()
         guard engine.state.phase == .playing,
               !engine.state.players.isEmpty,
-              engine.state.currentPlayer.isAI
+              engine.state.currentPlayer.isAI,
+              !tutorial.blocksAI
         else { return }
 
         let humanOut = !(humanPlayer?.hasCards ?? false)
         let burnPending = !effects.pendingBurnPile.isEmpty
-        let delayMs = burnPending ? 1800 : (humanOut ? 75 : 1200)
+        let delay = AIPacing.turnDelay(humanOut: humanOut, burnPending: burnPending)
 
         aiTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(delayMs))
+            try? await Task.sleep(for: delay)
             guard !Task.isCancelled,
                   engine.state.phase == .playing,
                   engine.state.currentPlayer.isAI
@@ -494,13 +556,65 @@ struct ContentView: View {
 
             if let jokerIdx = engine.pendingJokerPlayerIndex, engine.state.players[jokerIdx].isAI {
                 let target = engine.bestJokerTarget(playerIndex: jokerIdx)
-                try? await Task.sleep(for: .milliseconds(1500))
+                try? await Task.sleep(for: AIPacing.jokerDelay(humanOut: humanOut))
                 guard !Task.isCancelled, engine.state.phase == .playing else { return }
                 handleJokerTarget(target)
             } else {
+                evaluateTutorialLesson()
                 triggerAI()
             }
         }
+    }
+
+    // MARK: - Tutorial Mode
+
+    private func continueTutorialOverlay() {
+        withAnimation(GameTheme.snappySpring) {
+            tutorial.dismissCurrentOverlay(engine: engine)
+            syncTutorialSelectionHint()
+        }
+    }
+
+    private func scheduleTutorialDemoCompletion() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(1500))
+            guard let demo = tutorial.activeDemo, !demo.repeatsUntilPlayerAction else { return }
+            withAnimation(GameTheme.snappySpring) {
+                tutorial.finishActiveDemo()
+                syncTutorialSelectionHint()
+            }
+            evaluateTutorialLesson()
+            triggerAI()
+        }
+    }
+
+    private func evaluateTutorialLesson() {
+        tutorial.showNextLessonIfNeeded(engine: engine)
+        syncTutorialSelectionHint()
+    }
+
+    private func syncTutorialSelectionHint() {
+        guard tutorial.isActive,
+              let tutorialGroup = tutorial.highlightedPlayableGroup(engine: engine)
+        else { return }
+        selectedCards = tutorialGroup
+    }
+}
+
+enum AIPacing {
+    static func turnDelay(humanOut: Bool, burnPending: Bool) -> Duration {
+        if humanOut {
+            return .milliseconds(75)
+        }
+        return burnPending ? .milliseconds(1800) : .milliseconds(1200)
+    }
+
+    static func jokerDelay(humanOut: Bool) -> Duration {
+        humanOut ? .milliseconds(75) : .milliseconds(1500)
+    }
+
+    static func burnEffectDelay(playFlightDuration: TimeInterval, humanOut: Bool) -> TimeInterval {
+        humanOut ? 0.05 : playFlightDuration + 0.5
     }
 }
 

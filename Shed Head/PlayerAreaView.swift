@@ -9,6 +9,8 @@ struct PlayerAreaView: View {
     let showHints: Bool
     let skippedPlayerID: String?
     let revealedFaceDownIndex: Int?
+    let tutorialHighlightedCardIDs: Set<UUID>
+    let tutorialActiveDemo: TutorialDemo?
 
     @Binding var selectedCards: [Card]
     @Binding var dragCardID: UUID?
@@ -25,6 +27,7 @@ struct PlayerAreaView: View {
 
     @Environment(\.gameScale) private var gs
     @State private var faceDownFlipProgress: CGFloat = 0
+    @State private var tutorialMotionProgress: CGFloat = 0
 
     private var isDraggingFaceUp: Bool {
         dragCardID != nil && human.faceUp.contains(where: { $0.id == dragCardID })
@@ -47,6 +50,8 @@ struct PlayerAreaView: View {
                 isMyTurn: isMyTurn,
                 openingCard: openingCard,
                 showHints: showHints,
+                tutorialHighlightedCardIDs: tutorialHighlightedCardIDs,
+                tutorialActiveDemo: tutorialActiveDemo,
                 selectedCards: $selectedCards,
                 dragCardID: $dragCardID,
                 dragOffset: $dragOffset,
@@ -81,6 +86,12 @@ struct PlayerAreaView: View {
             } else {
                 faceDownFlipProgress = 0
             }
+        }
+        .onAppear {
+            restartTutorialMotion(for: tutorialActiveDemo)
+        }
+        .onChange(of: tutorialActiveDemo) { _, newValue in
+            restartTutorialMotion(for: newValue)
         }
     }
 
@@ -132,10 +143,16 @@ struct PlayerAreaView: View {
                 let rotation = isRevealing ? faceDownFlipProgress * 180 : 0
 
                 ZStack {
-                    CardView(card: human.faceDown[index], faceUp: false, small: true)
+                    CardView(
+                        card: human.faceDown[index],
+                        faceUp: false,
+                        highlight: tutorialHighlightedCardIDs.contains(human.faceDown[index].uid),
+                        small: true
+                    )
                         .opacity(rotation < 90 ? 1 : 0)
                     CardView(card: human.faceDown[index], faceUp: true,
-                             highlight: isRevealing && rotation >= 90, small: true)
+                             highlight: (isRevealing && rotation >= 90) || tutorialHighlightedCardIDs.contains(human.faceDown[index].uid),
+                             small: true)
                         .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
                         .opacity(rotation >= 90 ? 1 : 0)
                 }
@@ -144,7 +161,8 @@ struct PlayerAreaView: View {
                     axis: (x: 0, y: 1, z: 0),
                     perspective: 0.5
                 )
-                .scaleEffect(isRevealing ? 1.3 : 1.0)
+                .scaleEffect(isRevealing ? 1.3 : tutorialFaceDownScale(for: human.faceDown[index]))
+                .offset(y: tutorialFaceDownLift(for: human.faceDown[index]))
                 .zIndex(isRevealing ? 10 : 0)
                 .reportCardFrame(human.faceDown[index].uid)
                 .hideIfInFlight(human.faceDown[index].uid)
@@ -175,9 +193,11 @@ struct PlayerAreaView: View {
 
     private func faceUpCard(_ card: Card, index: Int, isPlayingFaceUp: Bool) -> some View {
         let playable = isPlayingFaceUp && canPlay(card)
+        let isTutorialTarget = tutorialHighlightedCardIDs.contains(card.uid)
         let isSelected = selectedCards.contains(card)
         let isDragTarget = dragCardID == card.id
         let isGroupedFaceUp = isSelected && !isDragTarget && isDraggingFaceUp
+        let tutorialLift = tutorialFaceUpLift(for: card, isInteracting: isDragTarget || isGroupedFaceUp)
         let convergenceX: CGFloat = {
             guard isGroupedFaceUp, let target = dragFaceUpIndex else { return 0 }
             return CGFloat(target - index) * faceUpSlotStep
@@ -186,13 +206,13 @@ struct PlayerAreaView: View {
         return CardView(
             card: card,
             faceUp: true,
-            highlight: showHints && playable && !isSelected,
+            highlight: isTutorialTarget || (showHints && playable && !isSelected),
             selected: isSelected,
             small: true
         )
         .reportCardFrame(card.uid)
         .hideIfInFlight(card.uid)
-        .offset(y: -10)
+        .offset(y: (isTutorialTarget ? -18 : -10) + tutorialLift)
         .offset(
             x: (isDragTarget || isGroupedFaceUp) ? dragOffset.width + convergenceX : 0,
             y: (isDragTarget || isGroupedFaceUp) ? dragOffset.height : 0
@@ -215,6 +235,39 @@ struct PlayerAreaView: View {
                 guard enabled else { return }
                 onDragEnd(value.translation)
             }
+    }
+
+    private func restartTutorialMotion(for demo: TutorialDemo?) {
+        tutorialMotionProgress = 0
+        guard demo != nil else { return }
+        withAnimation(.easeInOut(duration: 0.85).repeatForever(autoreverses: true)) {
+            tutorialMotionProgress = 1
+        }
+    }
+
+    private func tutorialFaceUpLift(for card: Card, isInteracting: Bool) -> CGFloat {
+        guard !isInteracting,
+              tutorialHighlightedCardIDs.contains(card.uid),
+              tutorialActiveDemo?.kind == .playCard || tutorialActiveDemo?.kind == .reverse
+        else { return 0 }
+
+        return -48 * gs * tutorialMotionProgress
+    }
+
+    private func tutorialFaceDownLift(for card: Card) -> CGFloat {
+        guard tutorialHighlightedCardIDs.contains(card.uid),
+              tutorialActiveDemo?.kind == .faceDown
+        else { return 0 }
+
+        return -10 * gs * tutorialMotionProgress
+    }
+
+    private func tutorialFaceDownScale(for card: Card) -> CGFloat {
+        guard tutorialHighlightedCardIDs.contains(card.uid),
+              tutorialActiveDemo?.kind == .faceDown
+        else { return 1 }
+
+        return 1 + 0.08 * tutorialMotionProgress
     }
 }
 

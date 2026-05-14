@@ -31,6 +31,20 @@ class GameEngine {
         message = "Swap cards between your hand and face-up cards"
     }
 
+    func startTutorialGame(playerCount: Int = 4) {
+        difficulty = .easy
+        eventSerial = 0
+        lastEvent = .none
+        mustPlayUnderSeven = false
+        openingCard = nil
+        skippedPlayerID = nil
+        lastBurnWasFourOfAKind = false
+        pendingJokerPlayerIndex = nil
+        jokerTargetPlayerID = nil
+        state = GameDealer.newTutorialGameState(playerCount: playerCount)
+        message = "Swap cards between your hand and face-up cards"
+    }
+
     // MARK: - Swap Phase
 
     func swapCards(handIndex: Int, faceUpIndex: Int) {
@@ -56,6 +70,42 @@ class GameEngine {
         } else {
             message = "You have the lowest card — your turn!"
         }
+    }
+
+    func forceHumanTutorialTurn() {
+        guard let humanIndex = state.players.firstIndex(where: { !$0.isAI }) else { return }
+        ensureHumanHasLowestTutorialStarter(humanIndex: humanIndex)
+        openingCard = lowestNonWildCard(in: state.players[humanIndex].hand)
+        mustPlayUnderSeven = false
+        state.pile.removeAll()
+        state.currentPlayerIndex = humanIndex
+        state.turnNumber = 0
+        message = "Your turn"
+    }
+
+    private func ensureHumanHasLowestTutorialStarter(humanIndex: Int) {
+        guard let lowest = lowestNonWildCard(in: state.players[humanIndex].hand + state.players[humanIndex].faceUp),
+              !state.players[humanIndex].hand.contains(lowest),
+              let faceUpIndex = state.players[humanIndex].faceUp.firstIndex(of: lowest),
+              let handSwapIndex = highestNonWildCardIndex(in: state.players[humanIndex].hand)
+        else { return }
+
+        let swapCard = state.players[humanIndex].hand[handSwapIndex]
+        state.players[humanIndex].hand[handSwapIndex] = lowest
+        state.players[humanIndex].faceUp[faceUpIndex] = swapCard
+        state.players[humanIndex].hand = GameRules.sortPlayableOrder(state.players[humanIndex].hand)
+    }
+
+    private func lowestNonWildCard(in cards: [Card]) -> Card? {
+        cards
+            .filter { $0.rank != .two && $0.rank != .joker }
+            .min { $0.rank < $1.rank }
+    }
+
+    private func highestNonWildCardIndex(in cards: [Card]) -> Int? {
+        cards.indices
+            .filter { cards[$0].rank != .two && cards[$0].rank != .joker }
+            .max { cards[$0].rank < cards[$1].rank }
     }
 
     private func determineStartingPlayer() -> Int {

@@ -4,6 +4,8 @@ struct SwapPhaseView: View {
     let human: Player
     @Binding var selection: SwapSelection?
     @Binding var dealRevealed: Bool
+    let tutorialHighlightedCardIDs: Set<UUID>
+    let tutorialActiveDemo: TutorialDemo?
     let namespace: Namespace.ID
     let onTapCard: (_ isFaceUp: Bool, _ index: Int) -> Void
     let onSwap: (_ handIndex: Int, _ faceUpIndex: Int) -> Void
@@ -12,6 +14,7 @@ struct SwapPhaseView: View {
     @State private var dragSource: SwapSelection? = nil
     @State private var dragOffset: CGSize = .zero
     @State private var cardFrames: [String: CGRect] = [:]
+    @State private var tutorialSwapProgress: CGFloat = 0
 
     private let swapSpace = "swapArea"
 
@@ -35,7 +38,13 @@ struct SwapPhaseView: View {
             .padding(.horizontal, 8)
             .padding(.top, 44)
             .padding(.bottom, 40)
-            .onAppear { dealRevealed = true }
+            .onAppear {
+                dealRevealed = true
+                restartTutorialSwapMotion(for: tutorialActiveDemo)
+            }
+            .onChange(of: tutorialActiveDemo) { _, newValue in
+                restartTutorialSwapMotion(for: newValue)
+            }
         }
     }
 
@@ -111,6 +120,7 @@ struct SwapPhaseView: View {
                 CardView(
                     card: human.faceUp[index],
                     faceUp: true,
+                    highlight: isTutorialTarget(human.faceUp[index]),
                     selected: selection == .faceUp(index) || isTarget
                 )
                 .matchedGeometryEffect(id: human.faceUp[index].id, in: namespace)
@@ -121,6 +131,7 @@ struct SwapPhaseView: View {
         .offset(y: dealRevealed ? 0 : -30)
         .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(Double(index) * 0.1), value: dealRevealed)
         .background(frameReader("table\(index)"))
+        .offset(tutorialSwapOffset(for: .faceUp(index)))
         .offset(isDragging ? dragOffset : .zero)
         .scaleEffect(isDragging ? 1.08 : (isTarget ? 1.05 : 1.0))
         .zIndex(isDragging ? 100 : 0)
@@ -135,6 +146,7 @@ struct SwapPhaseView: View {
         return CardView(
             card: card,
             faceUp: true,
+            highlight: isTutorialTarget(card),
             selected: selection == .hand(index) || isTarget
         )
         .matchedGeometryEffect(id: card.id, in: namespace)
@@ -145,6 +157,7 @@ struct SwapPhaseView: View {
             value: dealRevealed
         )
         .background(frameReader("hand\(index)"))
+        .offset(tutorialSwapOffset(for: .hand(index)))
         .offset(isDragging ? dragOffset : .zero)
         .scaleEffect(isDragging ? 1.08 : (isTarget ? 1.05 : 1.0))
         .zIndex(isDragging ? 100 : 0)
@@ -241,6 +254,65 @@ struct SwapPhaseView: View {
             font: .system(size: 12, weight: .black, design: .serif)
         )
         .opacity(dealRevealed ? 1 : 0)
+    }
+
+    private func isSpecialTutorialCard(_ card: Card) -> Bool {
+        card.rank == .two || card.rank == .ten || card.rank == .joker
+    }
+
+    private func isTutorialTarget(_ card: Card) -> Bool {
+        tutorialHighlightedCardIDs.contains(card.uid) || isSpecialTutorialCard(card)
+    }
+
+    private func restartTutorialSwapMotion(for demo: TutorialDemo?) {
+        tutorialSwapProgress = 0
+        guard demo?.kind == .swap else { return }
+        withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+            tutorialSwapProgress = 1
+        }
+    }
+
+    private var tutorialSwapHandIndex: Int? {
+        human.hand.firstIndex { tutorialHighlightedCardIDs.contains($0.uid) }
+            ?? human.hand.firstIndex { $0.rank == .two || $0.rank == .joker }
+    }
+
+    private var tutorialSwapFaceUpIndex: Int? {
+        human.faceUp.firstIndex { tutorialHighlightedCardIDs.contains($0.uid) }
+            ?? human.faceUp.firstIndex { $0.rank == .ten || $0.rank.rawValue >= Rank.jack.rawValue }
+    }
+
+    private func tutorialSwapOffset(for source: SwapSelection) -> CGSize {
+        guard tutorialActiveDemo?.kind == .swap,
+              dragSource == nil
+        else { return .zero }
+
+        let sourceKey: String
+        let targetKey: String
+
+        switch source {
+        case .hand(let index):
+            guard index == tutorialSwapHandIndex,
+                  let faceUpIndex = tutorialSwapFaceUpIndex
+            else { return .zero }
+            sourceKey = "hand\(index)"
+            targetKey = "table\(faceUpIndex)"
+        case .faceUp(let index):
+            guard index == tutorialSwapFaceUpIndex,
+                  let handIndex = tutorialSwapHandIndex
+            else { return .zero }
+            sourceKey = "table\(index)"
+            targetKey = "hand\(handIndex)"
+        }
+
+        guard let sourceFrame = cardFrames[sourceKey],
+              let targetFrame = cardFrames[targetKey]
+        else { return .zero }
+
+        return CGSize(
+            width: (targetFrame.midX - sourceFrame.midX) * tutorialSwapProgress,
+            height: (targetFrame.midY - sourceFrame.midY) * tutorialSwapProgress
+        )
     }
 }
 

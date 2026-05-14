@@ -15,6 +15,8 @@ struct GameTableView: View {
     let skippedPlayerID: String?
     let revealedFaceDownIndex: Int?
     let pendingBurnPile: [Card]
+    let tutorialHighlightedCardIDs: Set<UUID>
+    let tutorialActiveDemo: TutorialDemo?
     let onPickUpPile: () -> Void
     let onFaceDownTap: (Int) -> Void
     let onCardTap: (Card) -> Void
@@ -91,6 +93,8 @@ struct GameTableView: View {
                     showHints: showHints,
                     skippedPlayerID: skippedPlayerID,
                     revealedFaceDownIndex: revealedFaceDownIndex,
+                    tutorialHighlightedCardIDs: tutorialHighlightedCardIDs,
+                    tutorialActiveDemo: tutorialActiveDemo,
                     selectedCards: $selectedCards,
                     dragCardID: $dragCardID,
                     dragOffset: $dragOffset,

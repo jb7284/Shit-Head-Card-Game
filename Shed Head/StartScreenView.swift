@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct StartScreenView: View {
-    @Binding var difficulty: Difficulty
+    @Binding var gameplayMode: GameplayMode
 
     let onDeal: () -> Void
     let onShowRules: () -> Void
@@ -16,7 +16,7 @@ struct StartScreenView: View {
                 Spacer()
                 title
                 Spacer()
-                difficultyPicker
+                gameModePicker
                 Spacer().frame(height: 24)
                 dealButton
                 Spacer().frame(height: 16)
@@ -111,21 +111,21 @@ struct StartScreenView: View {
             .shadow(color: .black.opacity(0.7), radius: 4, y: 3)
     }
 
-    private var difficultyPicker: some View {
+    private var gameModePicker: some View {
         VStack(spacing: 10) {
-            pickerTitle("Difficulty")
+            pickerTitle("Game Play")
 
             HStack(spacing: 8) {
-                ForEach(Difficulty.allCases, id: \.self) { level in
+                ForEach(GameplayMode.allCases, id: \.self) { mode in
                     SelectionChip(
-                        isSelected: difficulty == level,
-                        width: 80,
+                        isSelected: gameplayMode == mode,
+                        width: 132,
                         height: 36,
                         selectedScale: 1.05
                     ) {
-                        difficulty = level
+                        gameplayMode = mode
                     } label: {
-                        Text(level.label)
+                        Text(mode.label)
                             .font(.system(size: 13, weight: .bold, design: .rounded))
                     }
                 }
@@ -140,7 +140,7 @@ struct StartScreenView: View {
             cornerRadius: 16,
             action: onDeal
         ) {
-            Text("Deal")
+            Text(gameplayMode.actionLabel)
                 .font(.system(size: 22, weight: .bold))
         }
     }

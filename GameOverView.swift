@@ -3,7 +3,6 @@ import SwiftUI
 struct GameOverOverlay: View {
     let loser: Player?
     let winner: String?
-    let turnCount: Int
     var onPlayAgain: () -> Void
 
     @State private var showBackground = false
@@ -11,8 +10,10 @@ struct GameOverOverlay: View {
     @State private var loserExiting = false
     @State private var showWinner = false
     @State private var confettiActive = false
-    @State private var showStats = false
     @State private var showButton = false
+    @State private var burstText: String?
+    @State private var burstScale: CGFloat = 0.35
+    @State private var burstOpacity: CGFloat = 0
 
     var body: some View {
         ZStack {
@@ -27,13 +28,6 @@ struct GameOverOverlay: View {
                 Spacer()
                 winnerSection
 
-                Text("Game lasted \(turnCount) turns")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.3))
-                    .opacity(showStats ? 1 : 0)
-                    .animation(.easeIn(duration: 0.4), value: showStats)
-                    .padding(.top, 12)
-
                 Spacer()
 
                 playAgainButton
@@ -41,6 +35,8 @@ struct GameOverOverlay: View {
             }
             .opacity(showWinner ? 1 : 0)
             .animation(.easeIn(duration: 0.5), value: showWinner)
+
+            outcomeBurstText
         }
         .onAppear { runSequence() }
     }
@@ -48,29 +44,20 @@ struct GameOverOverlay: View {
     // MARK: - Loser
 
     private var loserSection: some View {
-        VStack(spacing: 10) {
-            ZStack {
-                Text("\u{1F4A9}")
-                    .font(.system(size: 80))
-
-                if showLoser && !loserExiting {
-                    FlySwarm()
-                }
-            }
+        VStack(spacing: 16) {
+            Image("loser_mascot")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 500, maxHeight: 500)
+                .shadow(color: .black.opacity(0.65), radius: 28, y: 16)
             .scaleEffect(loserExiting ? 0.2 : (showLoser ? 1.0 : 3.0))
             .opacity(loserExiting ? 0 : (showLoser ? 1 : 0))
 
             Text(loser?.name ?? "Everyone")
-                .font(.system(size: 42, weight: .black, design: .serif))
+                .font(.system(size: 44, weight: .black, design: .serif))
                 .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.8), radius: 8, y: 3)
                 .scaleEffect(loserExiting ? 0.4 : (showLoser ? 1.0 : 1.8))
-                .opacity(loserExiting ? 0 : (showLoser ? 1 : 0))
-
-            Text("$ H ! T   H E A D")
-                .font(.system(size: 18, weight: .heavy))
-                .foregroundStyle(.white.opacity(0.5))
-                .tracking(4)
-                .scaleEffect(loserExiting ? 0.4 : (showLoser ? 1.0 : 1.5))
                 .opacity(loserExiting ? 0 : (showLoser ? 1 : 0))
         }
         .offset(y: loserExiting ? -80 : 0)
@@ -90,25 +77,11 @@ struct GameOverOverlay: View {
                     }
 
                     ZStack(alignment: .top) {
-                        Text("\u{1F4A9}")
-                            .font(.system(size: 90))
-                            .overlay(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 1.0, green: 0.90, blue: 0.45),
-                                        Color(red: 0.90, green: 0.72, blue: 0.20),
-                                        Color(red: 1.0, green: 0.85, blue: 0.35)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                                .mask(Text("\u{1F4A9}").font(.system(size: 90)))
-                            )
-                            .shadow(color: Color.orange.opacity(0.5), radius: 12, y: 3)
-
-                        Text("\u{1F451}")
-                            .font(.system(size: 44))
-                            .offset(y: -14)
+                        Image("winner_mascot")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: 540, maxHeight: 540)
+                            .shadow(color: Color.orange.opacity(0.45), radius: 24, y: 10)
                     }
                     .winnerShimmer(active: showWinner)
                     .scaleEffect(showWinner ? 1.0 : 0.1)
@@ -118,18 +91,29 @@ struct GameOverOverlay: View {
 
                 GoldShimmerText(
                     text: winner,
-                    font: .system(size: 38, weight: .black, design: .serif)
+                    font: .system(size: 44, weight: .black, design: .serif)
                 )
                 .offset(y: showWinner ? 0 : 30)
                 .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: showWinner)
-
-                GoldShimmerText(
-                    text: "W I N N E R",
-                    font: .system(size: 18, weight: .heavy)
-                )
-                .opacity(showWinner ? 1 : 0)
-                .animation(.easeOut(duration: 0.4).delay(0.5), value: showWinner)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var outcomeBurstText: some View {
+        if let burstText {
+            GeometryReader { proxy in
+                Text(burstText)
+                    .font(.system(size: min(proxy.size.width * 0.2, 190), weight: .black, design: .serif))
+                    .foregroundStyle(.white)
+                    .tracking(6)
+                    .shadow(color: .black.opacity(0.9), radius: 18, y: 8)
+                    .scaleEffect(burstScale)
+                    .opacity(burstOpacity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .allowsHitTesting(false)
+            .zIndex(900)
         }
     }
 
@@ -157,6 +141,7 @@ struct GameOverOverlay: View {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             showLoser = true
+            runOutcomeBurst("LOSER")
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
             loserExiting = true
@@ -164,12 +149,37 @@ struct GameOverOverlay: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.8) {
             showWinner = true
             confettiActive = true
+            runOutcomeBurst("WINNER")
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
-            showStats = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7.0) {
             showButton = true
+        }
+    }
+
+    private func runOutcomeBurst(_ text: String) {
+        burstText = text
+        burstScale = 0.35
+        burstOpacity = 0
+
+        withAnimation(.easeOut(duration: 0.18)) {
+            burstOpacity = 1
+            burstScale = 1.15
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            withAnimation(.easeOut(duration: 0.52)) {
+                burstScale = 2.15
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.45) {
+            withAnimation(.easeIn(duration: 0.35)) {
+                burstScale = 0.72
+                burstOpacity = 0
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            if burstText == text {
+                burstText = nil
+            }
         }
     }
 }
